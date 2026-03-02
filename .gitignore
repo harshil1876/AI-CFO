@@ -1,0 +1,33 @@
+# Environments
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependency directories
+node_modules/
+ai-cfo-backend/venv/
+venv/
+__pycache__/
+*.pyc
+
+# Next.js build output
+.next/
+out/
+build/
+
+# Django
+*.sqlite3
+db.sqlite3
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Files
+.DS_Store
+Thumbs.db

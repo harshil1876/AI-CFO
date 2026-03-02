@@ -1,0 +1,37 @@
+{
+  "config": {
+    "persona": "string (required) - The bot's personality and character description",
+    "botthesis": "string (required) - The bot's core thesis or purpose",
+    "greetings": "string | null - Default greeting message (optional)",
+    "fallback_message": "string | null - Message shown when bot cannot respond (optional)",
+    "version": "number (default: 1) - Configuration version number"
+  },
+  "settings": {
+    "business_name": "string (required) - Name of the business",
+    "business_type": "string (required) - Type of business",
+    "business_description": "string | null - Description of the business (optional)",
+    "product_name": "string (required) - Name of the product or service",
+    "product_description": "string | null - Description of the product or service (optional)",
+    "support_email": "string | null - Support email address (must be valid email format, optional)",
+    "contacts": "string | null - Contact information (optional)",
+    "supported_languages": "string[] (required, min 1) - Array of supported language codes (e.g., ['en', 'es'])"
+  },
+  "runtime_settings": {
+    "rate_limit_per_min": "number (default: 60, min: 1, max: 1000) - Rate limit per minute (read-only)",
+    "token_quota": "number (default: 50000, min: 0) - Token quota limit (read-only)",
+    "api_calls_this_month": "number (default: 0, min: 0) - Counter for API calls made this month (read-only)"
+  },
+  "ui_settings": {
+    "theme": "string - Options: 'modern' | 'classic' | 'minimal' | 'bubble' | 'retro'",
+    "chatbot_name": "string (required) - Display name of the chatbot",
+    "welcome_message": "string (required) - Welcome message shown to users",
+    "quick_questions": "string[] (max 5) - Array of quick question prompts (up to 5)",
+    "support_info": "string | null - Support information or contact details",
+    "position": "string - Options: 'bottom-right' | 'bottom-left'",
+    "auto_open_delay_ms": "number (min: 0) - Delay in milliseconds before auto-opening chat (0 = disabled)",
+    "auto_greet_on_open": "boolean - Whether to automatically greet when chat opens",
+    "ask_email_before_chat": "boolean - Whether to require email before starting chat",
+    "persist_chat": "boolean (default: true) - Whether to persist chat history",
+    "show_timestamps": "boolean (default: true) - Whether to show timestamps on messages"
+  }
+}

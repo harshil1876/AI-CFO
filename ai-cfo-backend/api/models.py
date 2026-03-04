@@ -1,6 +1,48 @@
 from django.db import models
 from django.utils import timezone
 
+
+class UploadedFile(models.Model):
+    """Tracks any file uploaded by a company. Supports CSV, Excel, PDF, JSON, etc."""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+
+    bot_id = models.CharField(max_length=255, db_index=True)
+
+    original_filename = models.CharField(max_length=500)
+    file_type = models.CharField(max_length=50)  # csv, xlsx, pdf, json, etc.
+    file_size = models.IntegerField(default=0)  # bytes
+    file_path = models.TextField()  # storage path (local or Azure Blob)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    detected_schema = models.JSONField(null=True, blank=True)  # AI-detected column mapping
+    row_count = models.IntegerField(default=0)
+    ai_summary = models.TextField(blank=True, null=True)  # Gemini-generated file summary
+    error_message = models.TextField(blank=True, null=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"[{self.bot_id}] {self.original_filename} ({self.status})"
+
+
+class ParsedRecord(models.Model):
+    """Flexible key-value records extracted from any uploaded file."""
+    bot_id = models.CharField(max_length=255, db_index=True)
+    source_file = models.ForeignKey(UploadedFile, on_delete=models.CASCADE, related_name='records')
+
+    row_index = models.IntegerField(default=0)
+    data = models.JSONField()  # The actual row data as {column: value} pairs
+    record_type = models.CharField(max_length=100, blank=True, null=True)  # AI-classified type
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Record [{self.bot_id}] row={self.row_index} type={self.record_type}"
+
+
 class Transaction(models.Model):
     # Isolated by bot_id to ensure multi-tenancy
     bot_id = models.CharField(max_length=255, db_index=True)

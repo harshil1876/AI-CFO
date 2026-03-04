@@ -1,8 +1,21 @@
 from rest_framework import serializers
 from .models import (
+    UploadedFile, ParsedRecord,
     Transaction, DepartmentData,
     KPISnapshot, ForecastResult, AnomalyLog, Recommendation,
 )
+
+
+class UploadedFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UploadedFile
+        fields = '__all__'
+
+
+class ParsedRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ParsedRecord
+        fields = '__all__'
 
 
 class TransactionSerializer(serializers.ModelSerializer):

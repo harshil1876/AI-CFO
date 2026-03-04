@@ -1,11 +1,14 @@
 from rest_framework import generics, status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from .models import (
+    UploadedFile, ParsedRecord,
     Transaction, DepartmentData,
     KPISnapshot, ForecastResult, AnomalyLog, Recommendation,
 )
 from .serializers import (
+    UploadedFileSerializer, ParsedRecordSerializer,
     TransactionSerializer, DepartmentDataSerializer,
     KPISnapshotSerializer, ForecastResultSerializer,
     AnomalyLogSerializer, RecommendationSerializer,
@@ -14,10 +17,74 @@ from .services.descriptive_analytics import calculate_kpis
 from .services.forecasting import run_revenue_forecast
 from .services.anomaly_detection import detect_anomalies
 from .services.prescriptive_logic import generate_recommendations
+from .services.file_processor import save_uploaded_file, process_file
+from .services.rag_engine import sync_financial_context_to_rag
+from .services.chat_service import chat_with_cfo
 
 
 # ──────────────────────────────────────────────
-# Sprint 1: Data Ingestion Endpoints
+# Sprint 1: Flexible File Upload Endpoints
+# ──────────────────────────────────────────────
+
+@api_view(["POST"])
+@parser_classes([MultiPartParser, FormParser])
+def upload_file(request):
+    """
+    Upload any financial file (CSV, Excel, JSON, etc.)
+    The system will auto-detect the schema and generate an AI summary.
+    """
+    bot_id = request.data.get("bot_id")
+    file_obj = request.FILES.get("file")
+
+    if not bot_id:
+        return Response(
+            {"error": "bot_id is required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not file_obj:
+        return Response(
+            {"error": "No file provided. Use 'file' field in multipart form."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Save the file
+    upload = save_uploaded_file(file_obj, bot_id)
+
+    # Process the file (parse + AI analysis)
+    result = process_file(upload.id)
+
+    return Response(result, status=status.HTTP_201_CREATED if result["status"] == "completed" else status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+
+class UploadedFileListView(generics.ListAPIView):
+    """List all uploaded files for a bot."""
+    serializer_class = UploadedFileSerializer
+
+    def get_queryset(self):
+        bot_id = self.request.query_params.get("bot_id")
+        if bot_id:
+            return UploadedFile.objects.filter(bot_id=bot_id).order_by("-uploaded_at")
+        return UploadedFile.objects.all().order_by("-uploaded_at")
+
+
+class ParsedRecordListView(generics.ListAPIView):
+    """List parsed records for a specific uploaded file."""
+    serializer_class = ParsedRecordSerializer
+
+    def get_queryset(self):
+        file_id = self.request.query_params.get("file_id")
+        bot_id = self.request.query_params.get("bot_id")
+        qs = ParsedRecord.objects.all()
+        if file_id:
+            qs = qs.filter(source_file_id=file_id)
+        if bot_id:
+            qs = qs.filter(bot_id=bot_id)
+        return qs.order_by("row_index")
+
+
+# ──────────────────────────────────────────────
+# Sprint 1: Legacy Structured Endpoints (kept for backward compat)
 # ──────────────────────────────────────────────
 
 class TransactionListCreateView(generics.ListCreateAPIView):
@@ -138,3 +205,50 @@ class RecommendationListView(generics.ListAPIView):
         if bot_id:
             return Recommendation.objects.filter(bot_id=bot_id).order_by("-created_at")
         return Recommendation.objects.all().order_by("-created_at")
+
+
+# ──────────────────────────────────────────────
+# Sprint 3: Conversational CFO & RAG Endpoints
+# ──────────────────────────────────────────────
+
+@api_view(["POST"])
+def chat(request, bot_id):
+    """
+    AI CFO Chat endpoint — the core conversational interface.
+    Retrieves RAG context + live KPIs, then queries Gemini LLM.
+    """
+    message = request.data.get("message")
+    chat_history = request.data.get("history", [])
+
+    if not message:
+        return Response(
+            {"error": "message is required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    result = chat_with_cfo(bot_id, message, chat_history)
+
+    return Response(result)
+
+
+@api_view(["POST"])
+def sync_rag(request):
+    """
+    Trigger RAG sync: push latest financial intelligence to Upstash Search.
+    Should be called after analytics pipeline completes.
+    """
+    bot_id = request.data.get("bot_id")
+
+    if not bot_id:
+        return Response(
+            {"error": "bot_id is required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    result = sync_financial_context_to_rag(bot_id)
+
+    return Response({
+        "status": "success",
+        **result,
+    })
+

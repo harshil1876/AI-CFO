@@ -1,17 +1,24 @@
 from django.urls import path
 from .views import (
+    upload_file, UploadedFileListView, ParsedRecordListView,
     TransactionListCreateView, DepartmentDataListCreateView,
     KPISnapshotListView, ForecastResultListView,
     AnomalyLogListView, RecommendationListView,
     run_analytics, run_forecast,
+    chat, sync_rag,
 )
 
 urlpatterns = [
-    # Sprint 1: Data Ingestion
+    # Sprint 1: Flexible File Upload
+    path('upload/', upload_file, name='upload-file'),
+    path('files/', UploadedFileListView.as_view(), name='uploaded-files-list'),
+    path('records/', ParsedRecordListView.as_view(), name='parsed-records-list'),
+
+    # Sprint 1: Legacy Structured Ingestion
     path('transactions/', TransactionListCreateView.as_view(), name='transaction-list-create'),
     path('department-data/', DepartmentDataListCreateView.as_view(), name='department-data-list-create'),
 
-    # Sprint 2: Intelligence Engine (Trigger Endpoints)
+    # Sprint 2: Intelligence Engine (Triggers)
     path('analytics/run/', run_analytics, name='run-analytics'),
     path('forecast/run/', run_forecast, name='run-forecast'),
 
@@ -20,4 +27,8 @@ urlpatterns = [
     path('forecasts/', ForecastResultListView.as_view(), name='forecast-list'),
     path('anomalies/', AnomalyLogListView.as_view(), name='anomaly-list'),
     path('recommendations/', RecommendationListView.as_view(), name='recommendation-list'),
+
+    # Sprint 3: Conversational CFO & RAG
+    path('chat/<str:bot_id>/', chat, name='chat'),
+    path('rag/sync/', sync_rag, name='rag-sync'),
 ]

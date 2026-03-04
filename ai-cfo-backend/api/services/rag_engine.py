@@ -1,7 +1,7 @@
 """
 RAG Sync Engine
 Compiles KPIs, forecasts, anomalies, and recommendations into structured
-financial summaries, then pushes them to Upstash Search indexed by bot_id.
+financial summaries, then pushes them to Upstash Vector indexed by bot_id.
 This allows the Conversational CFO to retrieve real financial context during chat.
 """
 import os
@@ -98,22 +98,22 @@ def retrieve_financial_context(bot_id: str, query: str, top_k: int = 5) -> str:
     Returns:
         A formatted string of relevant financial context for LLM injection.
     """
-    url = os.environ.get("UPSTASH_SEARCH_REST_URL")
-    token = os.environ.get("UPSTASH_SEARCH_REST_TOKEN")
+    url = os.environ.get("UPSTASH_VECTOR_REST_URL")
+    token = os.environ.get("UPSTASH_VECTOR_REST_TOKEN")
 
     if not url or not token:
-        logger.warning("Upstash Search not configured. RAG disabled.")
+        logger.warning("Upstash Vector not configured. RAG disabled.")
         return ""
 
     try:
         response = requests.post(
-            f"{url}/search",
+            f"{url}/query-data",
             headers={
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
             },
             json={
-                "query": query,
+                "data": query,
                 "topK": top_k,
                 "filter": f"botId = '{bot_id}'",
             },
@@ -126,10 +126,12 @@ def retrieve_financial_context(bot_id: str, query: str, top_k: int = 5) -> str:
             return ""
 
         context_parts = []
-        for hit in results["result"]:
-            content = hit.get("content", "")
-            if content:
-                context_parts.append(content)
+        hits = results.get("result", results) if isinstance(results, dict) else results
+        if isinstance(hits, list):
+            for hit in hits:
+                content = hit.get("data", hit.get("content", ""))
+                if content:
+                    context_parts.append(content)
 
         if context_parts:
             return "FINANCIAL CONTEXT START\n" + "\n---\n".join(context_parts) + "\nFINANCIAL CONTEXT END"
@@ -186,26 +188,26 @@ def _build_recommendation_summary(recs) -> str:
 
 
 def _push_to_upstash(documents: list) -> int:
-    """Push documents to Upstash Search via REST API."""
-    url = os.environ.get("UPSTASH_SEARCH_REST_URL")
-    token = os.environ.get("UPSTASH_SEARCH_REST_TOKEN")
+    """Push documents to Upstash Vector via REST API."""
+    url = os.environ.get("UPSTASH_VECTOR_REST_URL")
+    token = os.environ.get("UPSTASH_VECTOR_REST_TOKEN")
 
     if not url or not token:
-        logger.warning("Upstash Search not configured. Skipping RAG sync.")
+        logger.warning("Upstash Vector not configured. Skipping RAG sync.")
         return 0
 
     synced = 0
     for doc in documents:
         try:
             response = requests.post(
-                f"{url}/upsert",
+                f"{url}/upsert-data",
                 headers={
                     "Authorization": f"Bearer {token}",
                     "Content-Type": "application/json",
                 },
                 json={
                     "id": doc["id"],
-                    "content": doc["content"],
+                    "data": doc["content"],
                     "metadata": doc["metadata"],
                 },
                 timeout=5,

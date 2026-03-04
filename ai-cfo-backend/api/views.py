@@ -20,6 +20,8 @@ from .services.prescriptive_logic import generate_recommendations
 from .services.file_processor import save_uploaded_file, process_file
 from .services.rag_engine import sync_financial_context_to_rag
 from .services.chat_service import chat_with_cfo
+from .services.simulation_engine import run_simulation
+from .services.alert_service import check_and_send_alerts
 
 
 # ──────────────────────────────────────────────
@@ -252,3 +254,52 @@ def sync_rag(request):
         **result,
     })
 
+
+# ──────────────────────────────────────────────
+# Sprint 4: Simulation & Alert Endpoints
+# ──────────────────────────────────────────────
+
+@api_view(["POST"])
+def simulate(request):
+    """
+    Run a what-if simulation on financial data.
+    Accepts hypothetical changes and returns projected KPIs.
+    """
+    bot_id = request.data.get("bot_id")
+    period = request.data.get("period")
+    scenarios = request.data.get("scenarios", [])
+
+    if not bot_id or not period:
+        return Response(
+            {"error": "bot_id and period are required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not scenarios:
+        return Response(
+            {"error": "At least one scenario is required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    result = run_simulation(bot_id, period, scenarios)
+
+    if "error" in result:
+        return Response(result, status=status.HTTP_404_NOT_FOUND)
+
+    return Response({"status": "success", **result})
+
+
+@api_view(["POST"])
+def send_alerts(request):
+    """Check for critical alerts and send notifications via configured channels."""
+    bot_id = request.data.get("bot_id")
+
+    if not bot_id:
+        return Response(
+            {"error": "bot_id is required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    result = check_and_send_alerts(bot_id)
+
+    return Response({"status": "success", **result})

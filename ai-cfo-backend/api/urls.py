@@ -6,6 +6,7 @@ from .views import (
     AnomalyLogListView, RecommendationListView,
     run_analytics, run_forecast,
     chat, sync_rag,
+    simulate, send_alerts,
 )
 
 urlpatterns = [
@@ -31,4 +32,8 @@ urlpatterns = [
     # Sprint 3: Conversational CFO & RAG
     path('chat/<str:bot_id>/', chat, name='chat'),
     path('rag/sync/', sync_rag, name='rag-sync'),
+
+    # Sprint 4: Simulation & Alerts
+    path('simulate/', simulate, name='simulate'),
+    path('alerts/send/', send_alerts, name='send-alerts'),
 ]

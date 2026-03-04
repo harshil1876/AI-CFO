@@ -148,3 +148,48 @@ export async function getUploadedFiles(
   const res = await fetch(`${API_URL}/files/?bot_id=${botId}`);
   return res.json();
 }
+
+// ─── Sprint 4: Simulation ──────────────────
+
+export interface SimulationScenario {
+  type: "adjust_revenue" | "adjust_expense" | "adjust_department";
+  value: number; // percentage change
+  target?: string; // department name (for adjust_department)
+}
+
+export interface SimulationResult {
+  status: string;
+  bot_id: string;
+  period: string;
+  baseline: Record<string, number>;
+  simulated: Record<string, number>;
+  impact: Record<string, number>;
+  risk_level: string;
+  risk_message: string;
+  scenarios_applied: { type: string; description: string; impact: number }[];
+  error?: string;
+}
+
+export async function runSimulation(
+  botId: string,
+  period: string,
+  scenarios: SimulationScenario[]
+): Promise<SimulationResult> {
+  const res = await fetch(`${API_URL}/simulate/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bot_id: botId, period, scenarios }),
+  });
+  return res.json();
+}
+
+// ─── Sprint 4: Alerts ──────────────────────
+
+export async function sendAlerts(botId: string) {
+  const res = await fetch(`${API_URL}/alerts/send/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bot_id: botId }),
+  });
+  return res.json();
+}

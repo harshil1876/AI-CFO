@@ -93,14 +93,13 @@ def _call_gemini(message: str, context: str, chat_history: list = None) -> dict:
     This function is isolated so it can be swapped to another LLM provider.
     """
     try:
-        import google.generativeai as genai
+        from google import genai
 
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             return _fallback_response("Gemini API key not configured.")
 
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        client = genai.Client(api_key=api_key)
 
         # Build conversation
         prompt_parts = [SYSTEM_PROMPT]
@@ -119,7 +118,10 @@ def _call_gemini(message: str, context: str, chat_history: list = None) -> dict:
 
         full_prompt = "\n".join(prompt_parts)
 
-        response = model.generate_content(full_prompt)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=full_prompt,
+        )
         response_text = response.text
 
         # Try to parse JSON response

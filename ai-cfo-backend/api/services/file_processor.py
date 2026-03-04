@@ -222,16 +222,18 @@ Provide a concise financial summary:
 Keep your response under 300 words."""
 
     try:
-        import google.generativeai as genai
+        from google import genai
 
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             logger.warning("GEMINI_API_KEY not set, using local summary fallback")
             return _local_summary_fallback(df, schema, filename)
 
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        response = model.generate_content(prompt)
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
         return response.text
 
     except Exception as e:

@@ -100,7 +100,7 @@ def _call_gemini(message: str, context: str, chat_history: list = None) -> dict:
             return _fallback_response("Gemini API key not configured.")
 
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
         # Build conversation
         prompt_parts = [SYSTEM_PROMPT]

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useUser, useOrganization, UserButton, SignOutButton } from "@clerk/nextjs";
 import ChatInterface from "@/components/ChatInterface";
 import FileUpload from "@/components/FileUpload";
 import SimulationPanel from "@/components/SimulationPanel";
@@ -12,12 +13,15 @@ import {
     type UploadResponse,
 } from "@/lib/api";
 
-// Temporary hardcoded bot_id — will come from Clerk auth later
-const BOT_ID = "demo-company-001";
-
 type Tab = "chat" | "upload" | "analytics" | "simulation";
 
 export default function Dashboard() {
+    const { user, isLoaded: isUserLoaded } = useUser();
+    const { organization } = useOrganization();
+
+    // Use Clerk organization ID if available, otherwise user ID
+    const BOT_ID = organization?.id || user?.id || "guest";
+
     const [activeTab, setActiveTab] = useState<Tab>("chat");
     const [analyticsStatus, setAnalyticsStatus] = useState<string>("");
     const [isRunning, setIsRunning] = useState(false);
@@ -68,6 +72,18 @@ export default function Dashboard() {
         { id: "simulation" as Tab, label: "What-If", icon: "🧪" },
     ];
 
+    // Show loading while Clerk loads
+    if (!isUserLoaded) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-[#060a14] text-white">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                    <p className="text-sm text-gray-500">Loading your workspace...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex h-screen bg-[#060a14] text-white">
             {/* Sidebar */}
@@ -100,15 +116,36 @@ export default function Dashboard() {
                     ))}
                 </nav>
 
-                {/* Status Footer */}
+                {/* User Profile & Status Footer */}
                 <div className="border-t border-white/5 p-4 space-y-3">
+                    {/* User Info */}
+                    <div className="flex items-center gap-3 rounded-xl bg-white/[0.02] border border-white/5 p-3">
+                        <UserButton
+                            appearance={{
+                                elements: {
+                                    avatarBox: "h-8 w-8",
+                                },
+                            }}
+                        />
+                        <div className="flex-1 min-w-0">
+                            <p className="truncate text-xs font-medium text-gray-300">
+                                {user?.firstName || user?.emailAddresses[0]?.emailAddress || "User"}
+                            </p>
+                            <p className="truncate text-[10px] text-gray-600">
+                                {organization?.name || "Personal Account"}
+                            </p>
+                        </div>
+                    </div>
+
                     <div className="rounded-xl bg-white/[0.02] border border-white/5 p-3">
-                        <p className="text-[10px] uppercase tracking-wider text-gray-600">Bot ID</p>
-                        <p className="mt-1 truncate text-xs font-mono text-gray-400">{BOT_ID}</p>
+                        <p className="text-[10px] uppercase tracking-wider text-gray-600">Organization</p>
+                        <p className="mt-1 truncate text-xs font-mono text-gray-400">
+                            {organization?.name || "Personal"}
+                        </p>
                     </div>
                     <div className="rounded-xl bg-gradient-to-r from-blue-500/5 to-purple-500/5 border border-white/5 p-3">
                         <p className="text-[10px] uppercase tracking-wider text-gray-600">Model</p>
-                        <p className="mt-1 text-xs text-blue-400">Gemini 1.5 Flash</p>
+                        <p className="mt-1 text-xs text-blue-400">Gemini 2.5 Flash</p>
                     </div>
                 </div>
             </aside>

@@ -1,9 +1,27 @@
 /**
  * API Client for Django Backend
  * Handles all communication with the AI CFO Intelligence Engine.
+ * All requests include Clerk JWT Bearer token for authentication.
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+
+/**
+ * Get auth headers with Clerk Bearer token.
+ * Falls back to empty headers if Clerk is not loaded yet.
+ */
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    // @ts-expect-error — Clerk attaches to window globally
+    const token = await window.Clerk?.session?.getToken();
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
+    }
+  } catch {
+    // Clerk not ready yet, continue without auth
+  }
+  return {};
+}
 
 export interface ChatResponse {
   answer: string;
@@ -69,9 +87,10 @@ export async function sendMessage(
   message: string,
   history: { role: string; content: string }[] = []
 ): Promise<ChatResponse> {
+  const auth = await getAuthHeaders();
   const res = await fetch(`${API_URL}/chat/${botId}/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...auth },
     body: JSON.stringify({ message, history }),
   });
   return res.json();
@@ -83,12 +102,14 @@ export async function uploadFile(
   botId: string,
   file: File
 ): Promise<UploadResponse> {
+  const auth = await getAuthHeaders();
   const formData = new FormData();
   formData.append("bot_id", botId);
   formData.append("file", file);
 
   const res = await fetch(`${API_URL}/upload/`, {
     method: "POST",
+    headers: { ...auth },
     body: formData,
   });
   return res.json();
@@ -97,27 +118,30 @@ export async function uploadFile(
 // ─── Analytics ─────────────────────────────
 
 export async function runAnalytics(botId: string, period: string) {
+  const auth = await getAuthHeaders();
   const res = await fetch(`${API_URL}/analytics/run/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...auth },
     body: JSON.stringify({ bot_id: botId, period }),
   });
   return res.json();
 }
 
 export async function runForecast(botId: string, periods: number = 6) {
+  const auth = await getAuthHeaders();
   const res = await fetch(`${API_URL}/forecast/run/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...auth },
     body: JSON.stringify({ bot_id: botId, periods }),
   });
   return res.json();
 }
 
 export async function syncRAG(botId: string) {
+  const auth = await getAuthHeaders();
   const res = await fetch(`${API_URL}/rag/sync/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...auth },
     body: JSON.stringify({ bot_id: botId }),
   });
   return res.json();
@@ -126,26 +150,38 @@ export async function syncRAG(botId: string) {
 // ─── Read Endpoints ────────────────────────
 
 export async function getKPIs(botId: string): Promise<KPI[]> {
-  const res = await fetch(`${API_URL}/kpis/?bot_id=${botId}`);
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/kpis/?bot_id=${botId}`, {
+    headers: { ...auth },
+  });
   return res.json();
 }
 
 export async function getAnomalies(botId: string): Promise<Anomaly[]> {
-  const res = await fetch(`${API_URL}/anomalies/?bot_id=${botId}`);
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/anomalies/?bot_id=${botId}`, {
+    headers: { ...auth },
+  });
   return res.json();
 }
 
 export async function getRecommendations(
   botId: string
 ): Promise<Recommendation[]> {
-  const res = await fetch(`${API_URL}/recommendations/?bot_id=${botId}`);
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/recommendations/?bot_id=${botId}`, {
+    headers: { ...auth },
+  });
   return res.json();
 }
 
 export async function getUploadedFiles(
   botId: string
 ): Promise<UploadedFile[]> {
-  const res = await fetch(`${API_URL}/files/?bot_id=${botId}`);
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/files/?bot_id=${botId}`, {
+    headers: { ...auth },
+  });
   return res.json();
 }
 
@@ -175,9 +211,10 @@ export async function runSimulation(
   period: string,
   scenarios: SimulationScenario[]
 ): Promise<SimulationResult> {
+  const auth = await getAuthHeaders();
   const res = await fetch(`${API_URL}/simulate/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...auth },
     body: JSON.stringify({ bot_id: botId, period, scenarios }),
   });
   return res.json();
@@ -186,9 +223,10 @@ export async function runSimulation(
 // ─── Sprint 4: Alerts ──────────────────────
 
 export async function sendAlerts(botId: string) {
+  const auth = await getAuthHeaders();
   const res = await fetch(`${API_URL}/alerts/send/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...auth },
     body: JSON.stringify({ bot_id: botId }),
   });
   return res.json();

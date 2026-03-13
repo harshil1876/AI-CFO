@@ -3,15 +3,16 @@
 ## Overview
 This is the Intelligence Engine and API layer for the Enterprise AI CFO Platform, built with Django.
 
-### Tech Stack
+## Tech Stack
 - **Framework:** Django & Django REST Framework
 - **Database:** Supabase (PostgreSQL)
+- **Authentication:** Clerk via strict `PyJWT` decoding in custom Django Middleware (`clerk_auth.py`). All requests require a `Bearer` token.
 - **Deployment & Cloud:** Microsoft Azure (App Service)
 - **Security:** Azure Key Vault (for secrets management)
 
 ## Setup Locally
 1. Activate virtual environment: `.\venv\Scripts\activate`
-2. Install dependencies: `pip install -r requirements.txt` (To be created)
+2. Install dependencies: `pip install -r requirements.txt`
 3. Run migrations: `python manage.py migrate`
 4. Start server: `python manage.py runserver`
 

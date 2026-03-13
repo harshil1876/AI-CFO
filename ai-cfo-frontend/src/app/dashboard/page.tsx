@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useUser, useOrganization, UserButton, SignOutButton } from "@clerk/nextjs";
+import { useUser, useOrganization, UserButton, OrganizationSwitcher, SignOutButton } from "@clerk/nextjs";
 import ChatInterface from "@/components/ChatInterface";
 import FileUpload from "@/components/FileUpload";
 import SimulationPanel from "@/components/SimulationPanel";
@@ -138,14 +138,38 @@ export default function Dashboard() {
                     </div>
 
                     <div className="rounded-xl bg-white/[0.02] border border-white/5 p-3">
-                        <p className="text-[10px] uppercase tracking-wider text-gray-600">Organization</p>
-                        <p className="mt-1 truncate text-xs font-mono text-gray-400">
-                            {organization?.name || "Personal"}
-                        </p>
+                        <p className="text-[10px] uppercase tracking-wider text-gray-600 mb-2">Workspace</p>
+                        <OrganizationSwitcher
+                            hidePersonal={false}
+                            afterCreateOrganizationUrl="/dashboard"
+                            afterLeaveOrganizationUrl="/dashboard"
+                            afterSelectOrganizationUrl="/dashboard"
+                            afterSelectPersonalUrl="/dashboard"
+                            appearance={{
+                                elements: {
+                                    rootBox: "w-full flex items-center justify-start",
+                                    organizationSwitcherTrigger: "w-full text-xs text-gray-300 hover:text-white transition-colors bg-transparent",
+                                    organizationPreviewTextContainer: "truncate font-mono",
+                                }
+                            }}
+                        />
                     </div>
                     <div className="rounded-xl bg-gradient-to-r from-blue-500/5 to-purple-500/5 border border-white/5 p-3">
                         <p className="text-[10px] uppercase tracking-wider text-gray-600">Model</p>
                         <p className="mt-1 text-xs text-blue-400">Gemini 2.5 Flash</p>
+                    </div>
+
+                    {/* Sign Out Button */}
+                    <div className="pt-2">
+                        <SignOutButton redirectUrl="/">
+                            <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-xs font-medium text-red-500 transition-colors hover:bg-red-500/20 hover:text-red-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                    <path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 0 1 5.25 2h5.5A2.25 2.25 0 0 1 13 4.25v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 0-.75-.75h-5.5a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 0 0 .75-.75v-2a.75.75 0 0 1 1.5 0v2A2.25 2.25 0 0 1 10.75 18h-5.5A2.25 2.25 0 0 1 3 15.75V4.25Z" clipRule="evenodd" />
+                                    <path fillRule="evenodd" d="M19 10a.75.75 0 0 0-.75-.75H8.704l1.048-1.048a.75.75 0 1 0-1.06-1.06l-2.25 2.25a.75.75 0 0 0 0 1.06l2.25 2.25a.75.75 0 1 0 1.06-1.06l-1.048-1.048h9.546A.75.75 0 0 0 19 10Z" clipRule="evenodd" />
+                                </svg>
+                                Log Out
+                            </button>
+                        </SignOutButton>
                     </div>
                 </div>
             </aside>

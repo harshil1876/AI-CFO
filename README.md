@@ -43,7 +43,7 @@ This project is conceptually divided into two major layers:
 ## 🏗️ Agile Methodology
 This project is built iteratively using Agile Sprints. You can find detailed breakdowns of the Epics and User stories in `agile_user_stories.md`.
 
-*Currently completing Sprint 1: Project Scaffolding and Secure Data Ingestion.*
+*Current Status: Sprints 1 through 5 (Foundation, Chat, AI Engine, Clerk Auth) are **completed**. Preparing for Sprint 6: Data Integration Layer.*
 
 ## ☁️ Deployment
 The frontend is optimized for **Vercel** and the backend is configured for **Microsoft Azure** (App Services & Key Vault).

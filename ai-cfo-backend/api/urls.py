@@ -7,6 +7,8 @@ from .views import (
     run_analytics, run_forecast,
     chat, sync_rag,
     simulate, send_alerts,
+    # Sprint 6: Data Integration Connectors
+    data_sources, delete_data_source, trigger_sync,
 )
 
 urlpatterns = [
@@ -36,4 +38,9 @@ urlpatterns = [
     # Sprint 4: Simulation & Alerts
     path('simulate/', simulate, name='simulate'),
     path('alerts/send/', send_alerts, name='send-alerts'),
+
+    # Sprint 6: Data Integration Connectors
+    path('connectors/', data_sources, name='connector-list-create'),
+    path('connectors/<int:source_id>/', delete_data_source, name='connector-delete'),
+    path('connectors/<int:source_id>/sync/', trigger_sync, name='connector-sync'),
 ]

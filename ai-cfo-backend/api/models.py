@@ -142,3 +142,60 @@ class Recommendation(models.Model):
 
     def __str__(self):
         return f"Rec [{self.bot_id}] {self.priority.upper()} — {self.title}"
+
+
+# =====================================================
+# Sprint 6: Data Integration Layer
+# =====================================================
+
+class DataSource(models.Model):
+    """Stores credentials/config for external data connectors per organization."""
+    SOURCE_TYPES = [
+        ('tally', 'Tally Prime'),
+        ('razorpay', 'Razorpay'),
+        ('google_sheets', 'Google Sheets'),
+        ('zoho', 'Zoho Books'),
+        ('manual_csv', 'Manual CSV Upload'),
+    ]
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+        ('error', 'Error'),
+    ]
+
+    bot_id = models.CharField(max_length=255, db_index=True)
+    source_type = models.CharField(max_length=50, choices=SOURCE_TYPES)
+    display_name = models.CharField(max_length=255)  # e.g. "My Razorpay Production"
+    config = models.JSONField(default=dict)  # Encrypted credentials/config per connector
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    last_synced_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('bot_id', 'source_type', 'display_name')
+
+    def __str__(self):
+        return f"[{self.bot_id}] {self.get_source_type_display()} — {self.display_name}"
+
+
+class ConnectorSyncLog(models.Model):
+    """Audit log for every sync run per DataSource."""
+    STATUS_CHOICES = [
+        ('success', 'Success'),
+        ('partial', 'Partial'),
+        ('failed', 'Failed'),
+    ]
+
+    data_source = models.ForeignKey(DataSource, on_delete=models.CASCADE, related_name='sync_logs')
+    bot_id = models.CharField(max_length=255, db_index=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    records_fetched = models.IntegerField(default=0)
+    records_inserted = models.IntegerField(default=0)
+    error_message = models.TextField(blank=True, null=True)
+    currency_used = models.CharField(max_length=10, default='INR')  # Multi-currency
+    exchange_rate = models.DecimalField(max_digits=12, decimal_places=6, default=1.0)  # to INR
+    synced_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Sync [{self.bot_id}] {self.data_source.source_type} — {self.status} @ {self.synced_at}"

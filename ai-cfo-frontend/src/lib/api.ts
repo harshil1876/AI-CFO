@@ -231,3 +231,65 @@ export async function sendAlerts(botId: string) {
   });
   return res.json();
 }
+
+// ─── Sprint 6: Data Connectors ─────────────────────────────────────
+
+export interface DataSource {
+  id: number;
+  source_type: "tally" | "razorpay" | "google_sheets" | "zoho";
+  display_name: string;
+  status: "active" | "inactive" | "error";
+  last_synced_at: string | null;
+  created_at: string;
+}
+
+export interface SyncResult {
+  status: "success" | "partial" | "failed";
+  records_fetched: number;
+  records_inserted: number;
+  currency: string;
+  exchange_rate: string;
+  error: string | null;
+  synced_at: string;
+}
+
+export async function listConnectors(botId: string): Promise<DataSource[]> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/connectors/?bot_id=${botId}`, {
+    headers: auth,
+  });
+  return res.json();
+}
+
+export async function registerConnector(
+  botId: string,
+  sourceType: string,
+  displayName: string,
+  config: Record<string, unknown>
+): Promise<DataSource> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/connectors/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...auth },
+    body: JSON.stringify({ bot_id: botId, source_type: sourceType, display_name: displayName, config }),
+  });
+  return res.json();
+}
+
+export async function deleteConnector(botId: string, sourceId: number): Promise<void> {
+  const auth = await getAuthHeaders();
+  await fetch(`${API_URL}/connectors/${sourceId}/?bot_id=${botId}`, {
+    method: "DELETE",
+    headers: auth,
+  });
+}
+
+export async function triggerSync(botId: string, sourceId: number): Promise<SyncResult> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/connectors/${sourceId}/sync/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...auth },
+    body: JSON.stringify({ bot_id: botId }),
+  });
+  return res.json();
+}

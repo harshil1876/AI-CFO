@@ -5,6 +5,7 @@ import { useUser, useOrganization, UserButton, OrganizationSwitcher, SignOutButt
 import ChatInterface from "@/components/ChatInterface";
 import FileUpload from "@/components/FileUpload";
 import SimulationPanel from "@/components/SimulationPanel";
+import ConnectorsPanel from "@/components/ConnectorsPanel";
 import {
     runAnalytics,
     runForecast,
@@ -13,7 +14,7 @@ import {
     type UploadResponse,
 } from "@/lib/api";
 
-type Tab = "chat" | "upload" | "analytics" | "simulation";
+type Tab = "chat" | "upload" | "analytics" | "simulation" | "connectors";
 
 export default function Dashboard() {
     const { user, isLoaded: isUserLoaded } = useUser();
@@ -70,6 +71,7 @@ export default function Dashboard() {
         { id: "upload" as Tab, label: "Upload Data", icon: "📤" },
         { id: "analytics" as Tab, label: "Run Pipeline", icon: "⚡" },
         { id: "simulation" as Tab, label: "What-If", icon: "🧪" },
+        { id: "connectors" as Tab, label: "Connectors", icon: "🔌" },
     ];
 
     // Show loading while Clerk loads
@@ -188,6 +190,7 @@ export default function Dashboard() {
                             {activeTab === "upload" && "Upload CSV, Excel, JSON — any financial data"}
                             {activeTab === "analytics" && "Run the full intelligence pipeline (KPIs → Forecast → Anomalies → RAG → Alerts)"}
                             {activeTab === "simulation" && "Test hypothetical financial scenarios"}
+                            {activeTab === "connectors" && "Connect Tally, Razorpay, Google Sheets or Zoho to auto-import financial data"}
                         </p>
                     </div>
                 </header>
@@ -250,6 +253,10 @@ export default function Dashboard() {
 
                     {activeTab === "simulation" && (
                         <SimulationPanel botId={BOT_ID} />
+                    )}
+
+                    {activeTab === "connectors" && (
+                        <ConnectorsPanel botId={BOT_ID} />
                     )}
                 </div>
             </main>

@@ -6,6 +6,7 @@ from .models import (
     UploadedFile, ParsedRecord,
     Transaction, DepartmentData,
     KPISnapshot, ForecastResult, AnomalyLog, Recommendation,
+    DataSource, ConnectorSyncLog,
 )
 from .serializers import (
     UploadedFileSerializer, ParsedRecordSerializer,
@@ -303,3 +304,94 @@ def send_alerts(request):
     result = check_and_send_alerts(bot_id)
 
     return Response({"status": "success", **result})
+
+
+# ──────────────────────────────────────────────────────────────
+# Sprint 6: Data Integration Layer (Connectors)
+# ──────────────────────────────────────────────────────────────
+
+@api_view(['GET', 'POST'])
+def data_sources(request):
+    """
+    GET  /api/connectors/          — list all data sources for a bot_id
+    POST /api/connectors/          — register a new data source connection
+    """
+    bot_id = request.query_params.get('bot_id') or request.data.get('bot_id')
+    if not bot_id:
+        return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == 'GET':
+        sources = DataSource.objects.filter(bot_id=bot_id).values(
+            'id', 'source_type', 'display_name', 'status', 'last_synced_at', 'created_at'
+        )
+        return Response(list(sources))
+
+    # POST: create a new connector entry
+    source_type = request.data.get('source_type')
+    display_name = request.data.get('display_name', source_type)
+    config = request.data.get('config', {})
+
+    VALID_TYPES = ['tally', 'razorpay', 'google_sheets', 'zoho']
+    if source_type not in VALID_TYPES:
+        return Response(
+            {'error': f'Invalid source_type. Choose from: {VALID_TYPES}'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    ds = DataSource.objects.create(
+        bot_id=bot_id,
+        source_type=source_type,
+        display_name=display_name,
+        config=config,
+    )
+    return Response({
+        'id': ds.id,
+        'source_type': ds.source_type,
+        'display_name': ds.display_name,
+        'status': ds.status,
+        'message': 'Data source registered successfully.',
+    }, status=status.HTTP_201_CREATED)
+
+
+@api_view(['DELETE'])
+def delete_data_source(request, source_id):
+    """DELETE /api/connectors/<id>/ — remove a registered connector."""
+    bot_id = request.query_params.get('bot_id') or request.data.get('bot_id')
+    try:
+        ds = DataSource.objects.get(id=source_id, bot_id=bot_id)
+        ds.delete()
+        return Response({'message': 'Connector deleted.'}, status=status.HTTP_200_OK)
+    except DataSource.DoesNotExist:
+        return Response({'error': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+def trigger_sync(request, source_id):
+    """
+    POST /api/connectors/<id>/sync/ — manually trigger a data sync for a connector.
+    Imports transactions from the external source into our database.
+    """
+    from .connectors import get_connector
+
+    bot_id = request.data.get('bot_id') or request.query_params.get('bot_id')
+    try:
+        ds = DataSource.objects.get(id=source_id, bot_id=bot_id)
+    except DataSource.DoesNotExist:
+        return Response({'error': 'Data source not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        connector = get_connector(ds)
+        log = connector.sync()
+        return Response({
+            'status': log.status,
+            'records_fetched': log.records_fetched,
+            'records_inserted': log.records_inserted,
+            'currency': log.currency_used,
+            'exchange_rate': str(log.exchange_rate),
+            'error': log.error_message,
+            'synced_at': log.synced_at.isoformat(),
+        })
+    except ValueError as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({'error': f'Sync failed: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

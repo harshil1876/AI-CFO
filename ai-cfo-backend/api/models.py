@@ -199,3 +199,37 @@ class ConnectorSyncLog(models.Model):
 
     def __str__(self):
         return f"Sync [{self.bot_id}] {self.data_source.source_type} — {self.status} @ {self.synced_at}"
+
+# =====================================================
+# Sprint 7: Advanced Budgeting & Forecasting
+# =====================================================
+
+class Budget(models.Model):
+    """Stores budgeted amounts for either general Revenue/Expenses or specific Departmental Categories."""
+    bot_id = models.CharField(max_length=255, db_index=True)
+    
+    # "expense", "revenue", or a specific department/category name
+    category = models.CharField(max_length=255) 
+    
+    allocated_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    month_year = models.CharField(max_length=7) # e.g. "2026-03"
+    
+    # Version control (e.g. 1 = drafted, 2 = revised)
+    version = models.IntegerField(default=1)
+    is_active = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        # Only one active version per category per month per bot
+        constraints = [
+            models.UniqueConstraint(
+                fields=['bot_id', 'month_year', 'category'],
+                condition=models.Q(is_active=True),
+                name='unique_active_budget'
+            )
+        ]
+
+    def __str__(self):
+        return f"Budget [{self.bot_id}] {self.month_year} - {self.category}: ${self.allocated_amount} (v{self.version})"

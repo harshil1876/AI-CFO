@@ -293,3 +293,111 @@ export async function triggerSync(botId: string, sourceId: number): Promise<Sync
   });
   return res.json();
 }
+
+// ─── Sprint 7: Advanced Budgeting & Forecasting ────────────────────
+
+export interface Budget {
+  id: number;
+  bot_id: string;
+  category: string;
+  allocated_amount: string | number;
+  month_year: string;
+  version: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface VarianceDetail {
+  category: string;
+  budgeted: number;
+  actual: number;
+  variance: number;
+  variance_percent: number;
+  status: "over" | "under" | "on_track";
+}
+
+export interface VarianceReport {
+  month_year: string;
+  total_budget: number;
+  total_actual: number;
+  total_variance: number;
+  total_variance_percent: number;
+  details: VarianceDetail[];
+  error?: string;
+}
+
+export interface MonteCarloProjection {
+  month_year: string;
+  p10_best_case: number;
+  p50_expected: number;
+  p90_worst_case: number;
+}
+
+export interface MonteCarloResult {
+  status: string;
+  bot_id: string;
+  historical_mean: number;
+  historical_std: number;
+  projections: MonteCarloProjection[];
+  error?: string;
+}
+
+export async function getBudgets(botId: string, monthYear?: string): Promise<Budget[]> {
+  const auth = await getAuthHeaders();
+  const url = monthYear 
+    ? `${API_URL}/budgets/?bot_id=${botId}&month_year=${monthYear}`
+    : `${API_URL}/budgets/?bot_id=${botId}`;
+    
+  const res = await fetch(url, { headers: auth });
+  return res.json();
+}
+
+export async function saveBudget(
+  botId: string, 
+  category: string, 
+  monthYear: string, 
+  allocatedAmount: number
+): Promise<Budget> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/budgets/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...auth },
+    body: JSON.stringify({
+      bot_id: botId,
+      category,
+      month_year: monthYear,
+      allocated_amount: allocatedAmount
+    }),
+  });
+  return res.json();
+}
+
+export async function uploadExcelBudget(botId: string, file: File): Promise<{ message?: string; error?: string }> {
+  const auth = await getAuthHeaders();
+  const formData = new FormData();
+  formData.append("bot_id", botId);
+  formData.append("file", file);
+
+  const res = await fetch(`${API_URL}/budgets/upload/`, {
+    method: "POST",
+    headers: auth, // Do not set Content-Type for FormData (browser does it with boundary)
+    body: formData,
+  });
+  return res.json();
+}
+
+export async function getVarianceAnalysis(botId: string, monthYear: string): Promise<VarianceReport> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/budgets/variance/?bot_id=${botId}&month_year=${monthYear}`, {
+    headers: auth,
+  });
+  return res.json();
+}
+
+export async function getMonteCarloSimulation(botId: string): Promise<MonteCarloResult> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/forecast/monte-carlo/?bot_id=${botId}`, {
+    headers: auth,
+  });
+  return res.json();
+}

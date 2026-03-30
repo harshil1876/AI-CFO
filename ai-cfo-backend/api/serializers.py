@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import (
     UploadedFile, ParsedRecord,
     Transaction, DepartmentData,
-    KPISnapshot, ForecastResult, AnomalyLog, Recommendation,
+    KPISnapshot, ForecastResult, AnomalyLog, Recommendation, Budget
 )
 
 
@@ -51,4 +51,9 @@ class AnomalyLogSerializer(serializers.ModelSerializer):
 class RecommendationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recommendation
+        fields = '__all__'
+
+class BudgetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Budget
         fields = '__all__'

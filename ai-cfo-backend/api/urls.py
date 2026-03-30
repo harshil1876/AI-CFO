@@ -9,6 +9,8 @@ from .views import (
     simulate, send_alerts,
     # Sprint 6: Data Integration Connectors
     data_sources, delete_data_source, trigger_sync,
+    # Sprint 7: Budgeting & Forecasting
+    BudgetListCreateView, upload_budget, variance_analysis, monte_carlo_simulation,
 )
 
 urlpatterns = [
@@ -43,4 +45,10 @@ urlpatterns = [
     path('connectors/', data_sources, name='connector-list-create'),
     path('connectors/<int:source_id>/', delete_data_source, name='connector-delete'),
     path('connectors/<int:source_id>/sync/', trigger_sync, name='connector-sync'),
+
+    # Sprint 7: Advanced Budgeting & Forecasting
+    path('budgets/', BudgetListCreateView.as_view(), name='budget-list-create'),
+    path('budgets/upload/', upload_budget, name='budget-upload'),
+    path('budgets/variance/', variance_analysis, name='budget-variance'),
+    path('forecast/monte-carlo/', monte_carlo_simulation, name='monte-carlo-simulation'),
 ]

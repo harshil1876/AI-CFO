@@ -6,13 +6,13 @@ from .models import (
     UploadedFile, ParsedRecord,
     Transaction, DepartmentData,
     KPISnapshot, ForecastResult, AnomalyLog, Recommendation,
-    DataSource, ConnectorSyncLog,
+    DataSource, ConnectorSyncLog, Budget
 )
 from .serializers import (
     UploadedFileSerializer, ParsedRecordSerializer,
     TransactionSerializer, DepartmentDataSerializer,
     KPISnapshotSerializer, ForecastResultSerializer,
-    AnomalyLogSerializer, RecommendationSerializer,
+    AnomalyLogSerializer, RecommendationSerializer, BudgetSerializer
 )
 from .services.descriptive_analytics import calculate_kpis
 from .services.forecasting import run_revenue_forecast
@@ -23,6 +23,8 @@ from .services.rag_engine import sync_financial_context_to_rag
 from .services.chat_service import chat_with_cfo
 from .services.simulation_engine import run_simulation
 from .services.alert_service import check_and_send_alerts
+from .services.budgeting_engine import calculate_variance, run_monte_carlo_simulation
+import pandas as pd
 
 
 # ──────────────────────────────────────────────
@@ -395,3 +397,132 @@ def trigger_sync(request, source_id):
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({'error': f'Sync failed: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# ──────────────────────────────────────────────────────────────
+# Sprint 7: Advanced Budgeting & Forecasting
+# ──────────────────────────────────────────────────────────────
+
+class BudgetListCreateView(generics.ListCreateAPIView):
+    """
+    GET /api/budgets/ - List active budgets for bot
+    POST /api/budgets/ - Create or update a budget (upsert logic to handle versions)
+    """
+    serializer_class = BudgetSerializer
+
+    def get_queryset(self):
+        bot_id = self.request.query_params.get('bot_id')
+        month = self.request.query_params.get('month_year')
+        qs = Budget.objects.filter(is_active=True)
+        if bot_id:
+            qs = qs.filter(bot_id=bot_id)
+        if month:
+            qs = qs.filter(month_year=month)
+        return qs.order_by('month_year', 'category')
+
+    def create(self, request, *args, **kwargs):
+        # We want to do "upsert": if a budget for this bot, category, month exists, 
+        # deactivate it and create a v+1
+        bot_id = request.data.get('bot_id')
+        category = request.data.get('category')
+        month_year = request.data.get('month_year')
+        allocated_amount = request.data.get('allocated_amount')
+
+        if not all([bot_id, category, month_year, allocated_amount is not None]):
+            return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Find existing active budget
+        existing = Budget.objects.filter(bot_id=bot_id, category=category, month_year=month_year, is_active=True).first()
+        version = 1
+        if existing:
+            version = existing.version + 1
+            existing.is_active = False
+            existing.save()
+            
+        new_budget = Budget.objects.create(
+            bot_id=bot_id,
+            category=category,
+            month_year=month_year,
+            allocated_amount=allocated_amount,
+            version=version,
+            is_active=True
+        )
+        
+        return Response(BudgetSerializer(new_budget).data, status=status.HTTP_201_CREATED)
+
+@api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
+def upload_budget(request):
+    """
+    POST /api/budgets/upload/
+    Uploads an Excel file containing headers: [category, allocated_amount, month_year]
+    """
+    bot_id = request.data.get('bot_id')
+    file_obj = request.FILES.get('file')
+
+    if not bot_id or not file_obj:
+        return Response({"error": "bot_id and file are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        df = pd.read_excel(file_obj)
+        # Process expected columns
+        required_cols = {'category', 'allocated_amount', 'month_year'}
+        if not required_cols.issubset(set(df.columns)):
+            return Response({"error": f"Excel file must contain columns: {required_cols}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        created_count = 0
+        for _, row in df.iterrows():
+            category = str(row['category']).strip()
+            amount = float(row['allocated_amount'])
+            month = str(row['month_year']).strip()
+
+            existing = Budget.objects.filter(bot_id=bot_id, category=category, month_year=month, is_active=True).first()
+            version = 1
+            if existing:
+                version = existing.version + 1
+                existing.is_active = False
+                existing.save()
+                
+            Budget.objects.create(
+                bot_id=bot_id,
+                category=category,
+                month_year=month,
+                allocated_amount=amount,
+                version=version,
+                is_active=True
+            )
+            created_count += 1
+
+        return Response({"message": f"Successfully parsed and saved {created_count} budget entries."}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def variance_analysis(request):
+    """
+    GET /api/budgets/variance/?bot_id=xyz&month_year=2026-03
+    """
+    bot_id = request.query_params.get('bot_id')
+    month = request.query_params.get('month_year')
+    if not bot_id or not month:
+        return Response({"error": "bot_id and month_year required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    result = calculate_variance(bot_id, month)
+    if "error" in result:
+        return Response(result, status=status.HTTP_200_OK)
+        
+    return Response(result)
+
+@api_view(['GET'])
+def monte_carlo_simulation(request):
+    """
+    GET /api/forecast/monte-carlo/?bot_id=xyz
+    """
+    bot_id = request.query_params.get('bot_id')
+    if not bot_id:
+        return Response({"error": "bot_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    result = run_monte_carlo_simulation(bot_id)
+    if "error" in result:
+        return Response(result, status=status.HTTP_200_OK)
+        
+    return Response(result)

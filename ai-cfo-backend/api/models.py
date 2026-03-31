@@ -233,3 +233,60 @@ class Budget(models.Model):
 
     def __str__(self):
         return f"Budget [{self.bot_id}] {self.month_year} - {self.category}: ${self.allocated_amount} (v{self.version})"
+
+# =====================================================
+# Sprint 8: Invoice & AP Automation
+# =====================================================
+
+class PurchaseOrder(models.Model):
+    bot_id = models.CharField(max_length=100)
+    po_number = models.CharField(max_length=100)
+    vendor_name = models.CharField(max_length=255)
+    expected_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    status = models.CharField(
+        max_length=50, 
+        choices=[
+            ('open', 'Open'),
+            ('fulfilled', 'Fulfilled'),
+            ('cancelled', 'Cancelled')
+        ],
+        default='open'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('bot_id', 'po_number')
+
+class Invoice(models.Model):
+    bot_id = models.CharField(max_length=100)
+    vendor_name = models.CharField(max_length=255)
+    invoice_number = models.CharField(max_length=100, null=True, blank=True)
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    tax_amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    date_issued = models.DateField(null=True, blank=True)
+    
+    # AI Extracted Data
+    line_items = models.JSONField(default=list, help_text="[{'description': '...', 'amount': 100}]")
+    gl_code = models.CharField(max_length=100, null=True, blank=True)
+    
+    # Workflow & Risk
+    matched_po = models.ForeignKey(PurchaseOrder, on_delete=models.SET_NULL, null=True, blank=True)
+    fraud_confidence_score = models.IntegerField(default=0, help_text="0 to 100")
+    fraud_flags = models.JSONField(default=list, help_text="List of reasons e.g., 'Math mismatch', 'Unregistered vendor'")
+    
+    status = models.CharField(
+        max_length=50,
+        choices=[
+            ('pending_approval', 'Pending Approval'),
+            ('approved', 'Approved'),
+            ('rejected', 'Rejected'),
+            ('paid', 'Paid')
+        ],
+        default='pending_approval'
+    )
+    additional_notes = models.TextField(null=True, blank=True, help_text="Any extra text, terms, or context extracted from the document.")
+    file_path = models.CharField(max_length=500, null=True, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.vendor_name} - {self.total_amount}"

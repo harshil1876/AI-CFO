@@ -6,13 +6,14 @@ from .models import (
     UploadedFile, ParsedRecord,
     Transaction, DepartmentData,
     KPISnapshot, ForecastResult, AnomalyLog, Recommendation,
-    DataSource, ConnectorSyncLog, Budget
+    DataSource, ConnectorSyncLog, Budget, PurchaseOrder, Invoice
 )
 from .serializers import (
     UploadedFileSerializer, ParsedRecordSerializer,
     TransactionSerializer, DepartmentDataSerializer,
     KPISnapshotSerializer, ForecastResultSerializer,
-    AnomalyLogSerializer, RecommendationSerializer, BudgetSerializer
+    AnomalyLogSerializer, RecommendationSerializer, BudgetSerializer,
+    PurchaseOrderSerializer, InvoiceSerializer
 )
 from .services.descriptive_analytics import calculate_kpis
 from .services.forecasting import run_revenue_forecast
@@ -526,3 +527,75 @@ def monte_carlo_simulation(request):
         return Response(result, status=status.HTTP_200_OK)
         
     return Response(result)
+
+# ──────────────────────────────────────────────────────────────
+# Sprint 8: Invoice & AP Automation
+# ──────────────────────────────────────────────────────────────
+
+class PurchaseOrderListCreateView(generics.ListCreateAPIView):
+    """
+    GET /api/purchase-orders/?bot_id=123
+    POST /api/purchase-orders/
+    """
+    serializer_class = PurchaseOrderSerializer
+
+    def get_queryset(self):
+        bot_id = self.request.query_params.get('bot_id')
+        qs = PurchaseOrder.objects.all()
+        if bot_id:
+            qs = qs.filter(bot_id=bot_id)
+        return qs.order_by('-created_at')
+
+class InvoiceListView(generics.ListAPIView):
+    """
+    GET /api/invoices/?bot_id=123
+    """
+    serializer_class = InvoiceSerializer
+
+    def get_queryset(self):
+        bot_id = self.request.query_params.get('bot_id')
+        qs = Invoice.objects.all()
+        if bot_id:
+            qs = qs.filter(bot_id=bot_id)
+        return qs.order_by('-uploaded_at')
+
+@api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
+def upload_invoice(request):
+    """
+    POST /api/invoices/upload/
+    Uploads an image or PDF of an invoice for Gemini Vision extraction and fraud reasoning.
+    """
+    from .services.invoice_processor import process_invoice_document
+    import os
+
+    bot_id = request.data.get('bot_id')
+    file_obj = request.FILES.get('file')
+
+    if not bot_id or not file_obj:
+        return Response({"error": "bot_id and file are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Save temp file
+    upload_dir = os.path.join('media', 'invoices')
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, file_obj.name)
+    
+    with open(file_path, 'wb+') as destination:
+        for chunk in file_obj.chunks():
+            destination.write(chunk)
+
+    # Convert to bytes for Gemini
+    with open(file_path, 'rb') as f:
+        file_bytes = f.read()
+    
+    mime_type = "application/pdf" if file_obj.name.endswith('.pdf') else "image/jpeg"
+    if file_obj.name.endswith('.png'):
+        mime_type = "image/png"
+
+    # Send to multimodal AI
+    result = process_invoice_document(bot_id, file_path, mime_type, file_bytes)
+    
+    if "error" in result:
+        return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    return Response(result, status=status.HTTP_201_CREATED)

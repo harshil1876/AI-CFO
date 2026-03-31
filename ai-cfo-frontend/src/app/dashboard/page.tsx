@@ -7,6 +7,7 @@ import FileUpload from "@/components/FileUpload";
 import SimulationPanel from "@/components/SimulationPanel";
 import ConnectorsPanel from "@/components/ConnectorsPanel";
 import BudgetPanel from "@/components/BudgetPanel";
+import InvoiceAnalysisPanel from "@/components/InvoiceAnalysisPanel";
 import {
     runAnalytics,
     runForecast,
@@ -15,7 +16,7 @@ import {
     type UploadResponse,
 } from "@/lib/api";
 
-type Tab = "chat" | "upload" | "analytics" | "simulation" | "connectors" | "budget";
+type Tab = "chat" | "upload" | "analytics" | "simulation" | "connectors" | "budget" | "ap";
 
 export default function Dashboard() {
     const { user, isLoaded: isUserLoaded } = useUser();
@@ -73,6 +74,7 @@ export default function Dashboard() {
         { id: "analytics" as Tab, label: "Run Pipeline", icon: "⚡" },
         { id: "simulation" as Tab, label: "What-If", icon: "🧪" },
         { id: "budget" as Tab, label: "Budget & Scenarios", icon: "📈" },
+        { id: "ap" as Tab, label: "Accounts Payable", icon: "🧾" },
         { id: "connectors" as Tab, label: "Connectors", icon: "🔌" },
     ];
 
@@ -193,6 +195,7 @@ export default function Dashboard() {
                             {activeTab === "analytics" && "Run the full intelligence pipeline (KPIs → Forecast → Anomalies → RAG → Alerts)"}
                             {activeTab === "simulation" && "Test hypothetical financial scenarios"}
                             {activeTab === "budget" && "Advanced Budgeting Variance & Monte Carlo probability forecasting"}
+                            {activeTab === "ap" && "Multimodal AI document processing and Fraud Analysis"}
                             {activeTab === "connectors" && "Connect Tally, Razorpay, Google Sheets or Zoho to auto-import financial data"}
                         </p>
                     </div>
@@ -264,6 +267,10 @@ export default function Dashboard() {
 
                     {activeTab === "budget" && (
                         <BudgetPanel botId={BOT_ID} />
+                    )}
+
+                    {activeTab === "ap" && (
+                        <InvoiceAnalysisPanel botId={BOT_ID} />
                     )}
                 </div>
             </main>

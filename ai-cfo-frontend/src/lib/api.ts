@@ -401,3 +401,73 @@ export async function getMonteCarloSimulation(botId: string): Promise<MonteCarlo
   });
   return res.json();
 }
+
+// ==========================================
+// Accounts Payable & Invoice API
+// ==========================================
+
+export interface PurchaseOrder {
+  id: number;
+  bot_id: string;
+  po_number: string;
+  vendor_name: string;
+  expected_amount: string | number;
+  status: string;
+  created_at: string;
+}
+
+export interface LineItem {
+  description: string;
+  amount: number;
+}
+
+export interface InvoiceRecord {
+  id: number;
+  bot_id: string;
+  vendor_name: string;
+  invoice_number?: string;
+  total_amount?: string | number;
+  tax_amount?: string | number;
+  date_issued?: string;
+  line_items: LineItem[];
+  gl_code?: string;
+  matched_po?: PurchaseOrder; // This might be nested or an ID in your API, assuming ID for now
+  fraud_confidence_score: number;
+  fraud_flags: string[];
+  status: string;
+  additional_notes?: string;
+  file_path?: string;
+  uploaded_at: string;
+}
+
+export async function getInvoices(botId: string): Promise<InvoiceRecord[]> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/invoices/?bot_id=${botId}`, { headers: auth });
+  if (!res.ok) throw new Error("Failed to fetch invoices");
+  return res.json();
+}
+
+export async function uploadInvoiceDocument(botId: string, file: File): Promise<any> {
+  const auth = await getAuthHeaders();
+  const formData = new FormData();
+  formData.append("bot_id", botId);
+  formData.append("file", file);
+
+  const res = await fetch(`${API_URL}/invoices/upload/`, {
+    method: "POST",
+    headers: auth,
+    body: formData,
+  });
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.error || "Failed to process invoice");
+  }
+  return res.json();
+}
+
+export async function getPurchaseOrders(botId: string): Promise<PurchaseOrder[]> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/purchase-orders/?bot_id=${botId}`, { headers: auth });
+  if (!res.ok) throw new Error("Failed to fetch purchase orders");
+  return res.json();
+}

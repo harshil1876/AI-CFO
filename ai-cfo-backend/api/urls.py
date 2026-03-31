@@ -11,6 +11,8 @@ from .views import (
     data_sources, delete_data_source, trigger_sync,
     # Sprint 7: Budgeting & Forecasting
     BudgetListCreateView, upload_budget, variance_analysis, monte_carlo_simulation,
+    # Sprint 8: Invoice & AP Automation
+    PurchaseOrderListCreateView, InvoiceListView, upload_invoice
 )
 
 urlpatterns = [
@@ -51,4 +53,9 @@ urlpatterns = [
     path('budgets/upload/', upload_budget, name='budget-upload'),
     path('budgets/variance/', variance_analysis, name='budget-variance'),
     path('forecast/monte-carlo/', monte_carlo_simulation, name='monte-carlo-simulation'),
+
+    # Sprint 8: Invoice & AP Automation
+    path('purchase-orders/', PurchaseOrderListCreateView.as_view(), name='purchase-order-list-create'),
+    path('invoices/', InvoiceListView.as_view(), name='invoice-list'),
+    path('invoices/upload/', upload_invoice, name='invoice-upload'),
 ]

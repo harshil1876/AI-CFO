@@ -2,7 +2,8 @@ from rest_framework import serializers
 from .models import (
     UploadedFile, ParsedRecord,
     Transaction, DepartmentData,
-    KPISnapshot, ForecastResult, AnomalyLog, Recommendation, Budget
+    KPISnapshot, ForecastResult, AnomalyLog, Recommendation, Budget,
+    PurchaseOrder, Invoice
 )
 
 
@@ -56,4 +57,15 @@ class RecommendationSerializer(serializers.ModelSerializer):
 class BudgetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Budget
+        fields = '__all__'
+
+class PurchaseOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PurchaseOrder
+        fields = '__all__'
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    # If we want to nest PO data in GET requests, we can do it here later.
+    class Meta:
+        model = Invoice
         fields = '__all__'

@@ -26,6 +26,7 @@ class InvoiceData(BaseModel):
     fraud_confidence_score: int = Field(description="Percentage 0-100 indicating likelihood of fraud/tampering. 0 is perfectly safe. 100 is definitely fake.")
     fraud_flags: List[str] = Field(description="List of reasons for fraud score. E.g. 'Line items do not sum to total'. Be highly analytical.")
     additional_notes: Optional[str] = Field(description="Any extra text, contact info, shipping terms, promotions, payment instructions, or other details found on the document not captured in the other structured fields.")
+    gl_code: str = Field(description="Auto-mapped General Ledger category based on the vendor or line items (e.g., 'Software Subscriptions', 'Travel & Entertainment', 'Legal Services', 'Office Supplies'). Choose a standard corporate GL code.")
 
 
 def process_invoice_document(bot_id: str, file_path: str, mime_type: str, raw_bytes: bytes) -> dict:
@@ -118,7 +119,7 @@ def process_invoice_document(bot_id: str, file_path: str, mime_type: str, raw_by
             tax_amount=parsed_data.get("tax_amount"),
             date_issued=date_issued,
             line_items=parsed_data.get("line_items", []),
-            gl_code="Pending AI Mapping", # Optional future enhancement
+            gl_code=parsed_data.get("gl_code", "Uncategorized"),
             matched_po=matched_po,
             fraud_confidence_score=fraud_score,
             fraud_flags=flags,
@@ -137,6 +138,7 @@ def process_invoice_document(bot_id: str, file_path: str, mime_type: str, raw_by
             "fraud_score": invoice.fraud_confidence_score,
             "fraud_flags": invoice.fraud_flags,
             "status": invoice.status,
+            "gl_code": invoice.gl_code,
             "matched_po": matched_po.po_number if matched_po else None,
             "line_items": invoice.line_items,
             "additional_notes": invoice.additional_notes

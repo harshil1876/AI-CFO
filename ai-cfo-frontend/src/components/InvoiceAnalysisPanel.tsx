@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { 
-  uploadInvoiceDocument, getInvoices, getPurchaseOrders, 
+  uploadInvoiceDocument, getInvoices, getPurchaseOrders, updateInvoiceStatus,
   type InvoiceRecord, type PurchaseOrder 
 } from "@/lib/api";
 
@@ -71,6 +71,20 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
       setIsProcessing(false);
     } finally {
       clearInterval(interval);
+    }
+  };
+
+  const handleStatusUpdate = async (invoiceId: number, status: "approved" | "rejected") => {
+    try {
+      const result = await updateInvoiceStatus(botId, invoiceId, status);
+      // Update UI state
+      if (currentResult && currentResult.id === invoiceId) {
+        setCurrentResult({ ...currentResult, status: result.status });
+      }
+      // Update inbox list if we switch back
+      setInvoices(prev => prev.map(inv => inv.id === invoiceId ? { ...inv, status: result.status } : inv));
+    } catch (e: any) {
+      alert("Failed to update status: " + e.message);
     }
   };
 
@@ -221,10 +235,14 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
 
                   {currentResult.status === 'pending_approval' && (
                     <div className="flex gap-2 mt-6">
-                      <button className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-sm font-semibold transition-colors">
+                      <button 
+                        onClick={() => handleStatusUpdate(currentResult.id, "approved")}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-sm font-semibold transition-colors">
                         Approve
                       </button>
-                      <button className="flex-1 bg-white/5 hover:bg-white/10 text-white rounded-xl py-2 text-sm font-semibold transition-colors border border-white/10">
+                      <button 
+                         onClick={() => handleStatusUpdate(currentResult.id, "rejected")}
+                         className="flex-1 bg-white/5 hover:bg-white/10 text-white rounded-xl py-2 text-sm font-semibold transition-colors border border-white/10">
                         Reject
                       </button>
                     </div>
@@ -311,7 +329,28 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
                 </thead>
                 <tbody>
                   {invoices.map((inv) => (
-                    <tr key={inv.id} className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer">
+                    <tr 
+                      key={inv.id} 
+                      onClick={() => {
+                        // Open this invoice in the detail view
+                        setCurrentResult({
+                          id: inv.id,
+                          vendor_name: inv.vendor_name,
+                          date_issued: inv.date_issued,
+                          total_amount: inv.total_amount,
+                          tax_amount: inv.tax_amount,
+                          fraud_score: inv.fraud_confidence_score,
+                          fraud_flags: inv.fraud_flags || [],
+                          status: inv.status,
+                          matched_po: inv.matched_po ? inv.matched_po : null,
+                          line_items: inv.line_items || [],
+                          additional_notes: inv.additional_notes,
+                          gl_code: inv.gl_code
+                        });
+                        setActiveTab("upload"); // Switch to detail view
+                      }}
+                      className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
+                    >
                       <td className="px-4 py-4 font-medium">{inv.vendor_name}</td>
                       <td className="px-4 py-4 text-gray-400">{inv.date_issued}</td>
                       <td className="px-4 py-4">${Number(inv.total_amount).toLocaleString()}</td>

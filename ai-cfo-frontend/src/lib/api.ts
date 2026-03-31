@@ -471,3 +471,21 @@ export async function getPurchaseOrders(botId: string): Promise<PurchaseOrder[]>
   if (!res.ok) throw new Error("Failed to fetch purchase orders");
   return res.json();
 }
+
+export async function updateInvoiceStatus(
+  botId: string,
+  invoiceId: number,
+  status: "approved" | "rejected" | "paid"
+): Promise<{ success: boolean; status: string }> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/invoices/${invoiceId}/status/`, {
+    method: "PATCH",
+    headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ bot_id: botId, status }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to update invoice status");
+  }
+  return res.json();
+}

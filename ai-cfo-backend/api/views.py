@@ -599,3 +599,32 @@ def upload_invoice(request):
         return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return Response(result, status=status.HTTP_201_CREATED)
+
+@api_view(['PATCH'])
+def update_invoice_status(request, invoice_id):
+    """
+    PATCH /api/invoices/<id>/status/
+    Updates the status of an Invoice (e.g., Pending -> Approved or Rejected).
+    """
+    try:
+        invoice = Invoice.objects.get(id=invoice_id)
+        
+        # Verify Bot ID Authorization
+        bot_id = request.data.get('bot_id') or request.query_params.get('bot_id')
+        if not bot_id or invoice.bot_id != bot_id:
+            return Response({'error': 'Unauthorized Workspace'}, status=status.HTTP_403_FORBIDDEN)
+
+        new_status = request.data.get('status')
+        if new_status not in ['pending_approval', 'approved', 'rejected', 'paid']:
+            return Response({'error': 'Invalid status provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        invoice.status = new_status
+        invoice.save()
+        
+        return Response({'success': True, 'status': invoice.status})
+        
+    except Invoice.DoesNotExist:
+        return Response({'error': 'Invoice not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error updating invoice: {str(e)}")
+        return Response({'success': False, 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

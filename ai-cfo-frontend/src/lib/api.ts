@@ -10,16 +10,22 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
  * Get auth headers with Clerk Bearer token.
  * Falls back to empty headers if Clerk is not loaded yet.
  */
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  try {
-    // @ts-expect-error — Clerk attaches to window globally
-    const token = await window.Clerk?.session?.getToken();
-    if (token) {
-      return { Authorization: `Bearer ${token}` };
+export async function getAuthHeaders(): Promise<Record<string, string>> {
+  // Retry up to 6 times with 500ms delay, waiting for Clerk session to be ready
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      // @ts-expect-error — Clerk attaches to window globally
+      const token = await window.Clerk?.session?.getToken();
+      if (token) {
+        return { Authorization: `Bearer ${token}` };
+      }
+    } catch {
+      // Clerk not ready yet, will retry
     }
-  } catch {
-    // Clerk not ready yet, continue without auth
+    // Wait 500ms before next attempt
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
+  // Last resort fallback — return empty (will get 401 if auth is required)
   return {};
 }
 

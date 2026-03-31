@@ -1,135 +1,219 @@
 "use client";
-
-import { useUser, useOrganization, UserButton, OrganizationSwitcher, SignOutButton } from "@clerk/nextjs";
+import { useState, ReactNode, useEffect } from "react";
+import { useUser, useOrganization, UserButton, SignOutButton, OrganizationSwitcher } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
+import { 
+  LayoutDashboard, MessageSquare, BarChart3, Receipt, 
+  UploadCloud, Zap, FlaskConical, Link2, 
+  ChevronLeft, ChevronRight, Bell, Search, 
+  LogOut, Settings, BarChart
+} from "lucide-react";
+import { getAuthHeaders } from "@/lib/api";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
     const { user, isLoaded: isUserLoaded } = useUser();
     const { organization } = useOrganization();
     const pathname = usePathname();
 
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [notificationCount, setNotificationCount] = useState(0);
+
+    const botId = organization?.id || "org_default";
+
+    const fetchNotificationCount = async () => {
+        try {
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/count/?bot_id=${botId}`, {
+                headers
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setNotificationCount(data.count);
+            }
+        } catch (error) {
+            console.error("Failed to fetch notification count", error);
+        }
+    };
+
+    // Initial fetch and poll
+    useEffect(() => {
+        if (isUserLoaded) {
+            fetchNotificationCount();
+            const interval = setInterval(fetchNotificationCount, 30000); // Check every 30s
+            return () => clearInterval(interval);
+        }
+    }, [isUserLoaded, botId]);
+
+    // Resync when viewing notifications page
+    useEffect(() => {
+        if (pathname === "/dashboard/notifications") {
+            setNotificationCount(0);
+        }
+    }, [pathname]);
+
+    // Persist sidebar state
+    useEffect(() => {
+        const stored = localStorage.getItem("sidebar-collapsed");
+        if (stored !== null) setIsCollapsed(stored === "true");
+    }, []);
+
+    const toggleSidebar = () => {
+        const newState = !isCollapsed;
+        setIsCollapsed(newState);
+        localStorage.setItem("sidebar-collapsed", String(newState));
+    };
+
     const tabs = [
-        { href: "/dashboard", label: "Financial Overview", icon: "📊" },
-        { href: "/dashboard/chat", label: "AI CFO Chat", icon: "💬" },
-        { href: "/dashboard/budget", label: "Budget & Scenarios", icon: "📈" },
-        { href: "/dashboard/ap", label: "Accounts Payable", icon: "🧾" },
-        { href: "/dashboard/upload", label: "Upload Data", icon: "📤" },
-        { href: "/dashboard/pipeline", label: "Run Pipeline", icon: "⚡" },
-        { href: "/dashboard/simulation", label: "What-If", icon: "🧪" },
-        { href: "/dashboard/connectors", label: "Connectors", icon: "🔌" },
+        { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+        { href: "/dashboard/chat", label: "AI CFO Chat", icon: MessageSquare },
+        { href: "/dashboard/budget", label: "Budgeting", icon: BarChart3 },
+        { href: "/dashboard/ap", label: "Accounts Payable", icon: Receipt },
+        { href: "/dashboard/upload", label: "Upload Data", icon: UploadCloud },
+        { href: "/dashboard/pipeline", label: "Intelligence", icon: Zap },
+        { href: "/dashboard/simulation", label: "Scenarios", icon: FlaskConical },
+        { href: "/dashboard/connectors", label: "Connectors", icon: Link2 },
     ];
 
     // Show loading while Clerk loads
     if (!isUserLoaded) {
         return (
-            <div className="flex h-screen items-center justify-center bg-[#060a14] text-white">
+            <div className="flex h-screen items-center justify-center bg-[#050814] text-white">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-                    <p className="text-sm text-gray-500">Loading your workspace...</p>
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+                    <p className="text-sm text-gray-500">Loading your executive workspace...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex h-screen bg-[#060a14] text-white">
+        <div className="flex h-screen bg-[#0c0f17] text-white">
             {/* Sidebar */}
-            <aside className="flex w-64 flex-col border-r border-white/5 bg-[#080d18]">
-                {/* Logo */}
-                <div className="flex items-center gap-3 border-b border-white/5 px-6 py-5">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-sm font-bold shadow-lg shadow-blue-500/20">
-                        ₹
-                    </div>
-                    <div>
-                        <h1 className="text-sm font-bold tracking-tight">AI CFO</h1>
-                        <p className="text-[10px] text-gray-500">Enterprise Intelligence</p>
-                    </div>
-                </div>
-
-                {/* Navigation */}
-                <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-                    {tabs.map((tab) => {
-                        const isActive = pathname === tab.href;
-                        return (
-                            <Link
-                                key={tab.href}
-                                href={tab.href}
-                                className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all ${
-                                    isActive
-                                        ? "bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-500/5"
-                                        : "text-gray-400 hover:bg-white/5 hover:text-gray-300"
-                                }`}
-                            >
-                                <span className="text-base">{tab.icon}</span>
-                                {tab.label}
-                            </Link>
-                        );
-                    })}
-                </nav>
-
-                {/* User Profile & Status Footer */}
-                <div className="border-t border-white/5 p-4 space-y-3">
-                    {/* User Info */}
-                    <div className="flex items-center gap-3 rounded-xl bg-white/[0.02] border border-white/5 p-3">
-                        <UserButton
-                            appearance={{
-                                elements: {
-                                    avatarBox: "h-8 w-8",
-                                },
-                            }}
-                        />
-                        <div className="flex-1 min-w-0">
-                            <p className="truncate text-xs font-medium text-gray-300">
-                                {user?.firstName || user?.emailAddresses[0]?.emailAddress || "User"}
-                            </p>
-                            <p className="truncate text-[10px] text-gray-600">
-                                {organization?.name || "Personal Account"}
-                            </p>
-                        </div>
+            <aside 
+                className={`flex flex-col transition-all duration-300 border-r border-[#1e2637] bg-[#121622] ${
+                    isCollapsed ? "w-20" : "w-64"
+                }`}
+            >
+                {/* Sidebar Header: Branding (Only show if not collapsed?) actually STRATOS has symbol? */}
+                {/* Actually STRATOS sidebar has "Dashboard, Financials..." etc. */}
+                
+                <div className="flex flex-col flex-1 mt-6">
+                    {/* Collapse Toggle at Top */}
+                    <div className="px-4 mb-4 flex justify-start">
+                        <button 
+                            onClick={toggleSidebar}
+                            className={`flex items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white transition-all group ${isCollapsed ? 'w-full' : 'w-10'}`}
+                        >
+                            {isCollapsed ? <ChevronRight size={20} className="group-hover:text-white" /> : <ChevronLeft size={20} className="group-hover:text-white" />}
+                        </button>
                     </div>
 
-                    <div className="rounded-xl bg-white/[0.02] border border-white/5 p-3">
-                        <p className="text-[10px] uppercase tracking-wider text-gray-600 mb-2">Workspace</p>
-                        <OrganizationSwitcher
-                            hidePersonal={false}
-                            afterCreateOrganizationUrl="/dashboard"
-                            afterLeaveOrganizationUrl="/dashboard"
-                            afterSelectOrganizationUrl="/dashboard"
-                            afterSelectPersonalUrl="/dashboard"
-                            appearance={{
-                                elements: {
-                                    rootBox: "w-full flex items-center justify-start",
-                                    organizationSwitcherTrigger: "w-full text-xs text-gray-300 hover:text-white transition-colors bg-transparent",
-                                    organizationPreviewTextContainer: "truncate font-mono",
-                                }
-                            }}
-                        />
-                    </div>
-                    <div className="rounded-xl bg-gradient-to-r from-blue-500/5 to-purple-500/5 border border-white/5 p-3">
-                        <p className="text-[10px] uppercase tracking-wider text-gray-600">Model</p>
-                        <p className="mt-1 text-xs text-blue-400">Gemini 2.5 Flash</p>
-                    </div>
+                    <nav className="flex-1 px-4 space-y-1">
+                        {tabs.map((tab) => {
+                            const isActive = pathname === tab.href;
+                            const Icon = tab.icon;
+                            return (
+                                <Link
+                                    key={tab.href}
+                                    href={tab.href}
+                                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all group ${
+                                        isActive
+                                            ? "bg-white/10 text-white font-semibold"
+                                            : "text-slate-400 hover:bg-white/5 hover:text-white"
+                                    }`}
+                                >
+                                    <Icon size={20} className={isActive ? "text-white" : "text-slate-400 group-hover:text-white"} />
+                                    {!isCollapsed && <span>{tab.label}</span>}
+                                </Link>
+                            );
+                        })}
+                    </nav>
 
-                    {/* Sign Out Button */}
-                    <div className="pt-2">
+                    {/* Sidebar Footer */}
+                    <div className="px-4 py-4 border-t border-[#1e2637] space-y-2">
                         <SignOutButton redirectUrl="/">
-                            <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-xs font-medium text-red-500 transition-colors hover:bg-red-500/20 hover:text-red-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                                    <path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 0 1 5.25 2h5.5A2.25 2.25 0 0 1 13 4.25v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 0-.75-.75h-5.5a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 0 0 .75-.75v-2a.75.75 0 0 1 1.5 0v2A2.25 2.25 0 0 1 10.75 18h-5.5A2.25 2.25 0 0 1 3 15.75V4.25Z" clipRule="evenodd" />
-                                    <path fillRule="evenodd" d="M19 10a.75.75 0 0 0-.75-.75H8.704l1.048-1.048a.75.75 0 1 0-1.06-1.06l-2.25 2.25a.75.75 0 0 0 0 1.06l2.25 2.25a.75.75 0 1 0 1.06-1.06l-1.048-1.048h9.546A.75.75 0 0 0 19 10Z" clipRule="evenodd" />
-                                </svg>
-                                Log Out
+                            <button className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all">
+                                <LogOut size={20} />
+                                {!isCollapsed && <span className="text-sm">Log Out</span>}
                             </button>
                         </SignOutButton>
                     </div>
                 </div>
             </aside>
 
-            {/* Main Content Area provided by Next.js child routes */}
-            <main className="flex flex-1 flex-col overflow-hidden">
-                {children}
+            {/* Main Content Area */}
+            <main className="flex flex-1 flex-col overflow-hidden relative">
+                
+                {/* Top Navbar */}
+                <header className="flex h-[72px] shrink-0 items-center justify-between border-b border-[#1e2637] bg-[#0c0f17]/80 backdrop-blur-md px-8 z-20">
+                    
+                    {/* Left: CFOlytics Logo & Title */}
+                    <div className="flex items-center gap-4">
+                        <img 
+                            src="/Logo.png" 
+                            alt="CFOlytics Logo" 
+                            className="h-10 w-auto object-contain"
+                        />
+                        <div className="flex items-baseline gap-2">
+                            <h1 className="text-lg font-bold text-white tracking-tight">CFOlytics</h1>
+                            <span className="text-sm text-slate-400 border-l border-[#1e2637] pl-3 hidden sm:block">AI CFO Platform</span>
+                        </div>
+                    </div>
+
+                    {/* Center: Search Box */}
+                    <div className="flex-1 max-w-xl mx-auto px-6 hidden md:block">
+                        <div className="relative group">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-white transition-colors" size={18} />
+                            <input 
+                                type="text"
+                                placeholder="Search dashboards, transactions, or ask AI..."
+                                className="w-full bg-[#1e2637]/50 border border-[#1e2637] rounded-full py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-white/20 focus:bg-[#1e2637] transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-6">
+                        {/* Workspace Switcher */}
+                        <div className="hidden sm:block">
+                            <OrganizationSwitcher 
+                                hidePersonal 
+                                appearance={{
+                                    elements: {
+                                        organizationSwitcherTrigger: "flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#1e2637] bg-[#121622] text-slate-400 hover:text-white transition-all",
+                                        organizationPreviewMainIdentifier: "text-white text-xs font-semibold",
+                                        organizationPreviewSecondaryIdentifier: "text-slate-500 text-[10px]",
+                                    }
+                                }}
+                            />
+                        </div>
+
+                        <Link href="/dashboard/notifications" className="relative group">
+                            <Bell size={22} className="text-slate-300 group-hover:text-white transition-colors" />
+                            {notificationCount > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-[10px] text-white font-bold h-4 w-4 rounded-full flex items-center justify-center border-2 border-[#0c0f17]">
+                                    {notificationCount}
+                                </span>
+                            )}
+                        </Link>
+
+                        <div className="h-6 w-px bg-[#1e2637]"></div>
+
+                        <div className="flex items-center gap-3">
+                            <div className="hidden lg:flex flex-col items-end leading-tight">
+                                <span className="text-sm font-semibold text-white">{user?.fullName || "A. Chen (CFO)"}</span>
+                                <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">{organization?.name || "Corporate Treasury"}</span>
+                            </div>
+                            <UserButton appearance={{ elements: { avatarBox: "h-9 w-9" } }} />
+                        </div>
+                    </div>
+                </header>
+
+                {/* Sub-Pages Content */}
+                <div className="flex-1 overflow-auto relative">
+                    {children}
+                </div>
             </main>
         </div>
     );

@@ -55,41 +55,47 @@ export default function FinancialChart({ botId }: { botId: string }) {
                 >
                     <defs>
                         <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
                             <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                         </linearGradient>
                         <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4}/>
-                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
                         </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff10" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e2637" opacity={0.5} />
                     <XAxis 
                         dataKey="name" 
-                        stroke="#ffffff50" 
-                        fontSize={12} 
+                        stroke="#94a3b8" 
+                        fontSize={11} 
                         tickLine={false} 
                         axisLine={false} 
-                        dy={10}
+                        dy={8}
                     />
                     <YAxis 
-                        stroke="#ffffff50" 
-                        fontSize={12} 
+                        stroke="#94a3b8" 
+                        fontSize={11} 
                         tickLine={false} 
                         axisLine={false} 
                         tickFormatter={(value) => `$${(value / 1000)}k`}
-                        dx={-10}
                     />
                     <Tooltip 
-                        contentStyle={{ backgroundColor: '#0f172a', borderColor: '#ffffff20', borderRadius: '12px', color: '#fff' }}
-                        itemStyle={{ color: '#fff' }}
-                        formatter={(value: any) => `$${Number(value).toLocaleString()}`}
+                        contentStyle={{ 
+                            backgroundColor: '#1e2637', 
+                            borderColor: '#334155', 
+                            borderRadius: '8px', 
+                            fontSize: '12px',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                        }}
+                        itemStyle={{ padding: '2px 0' }}
+                        cursor={{ stroke: '#334155', strokeWidth: 2 }}
                     />
                     <Area 
                         type="monotone" 
                         dataKey="Expenses" 
-                        stroke="#f43f5e" 
-                        strokeWidth={3}
+                        stroke="#f59e0b" 
+                        strokeWidth={2}
                         fillOpacity={1} 
                         fill="url(#colorExp)" 
                     />
@@ -97,7 +103,7 @@ export default function FinancialChart({ botId }: { botId: string }) {
                         type="monotone" 
                         dataKey="Revenue" 
                         stroke="#10b981" 
-                        strokeWidth={3}
+                        strokeWidth={2}
                         fillOpacity={1} 
                         fill="url(#colorRev)" 
                     />

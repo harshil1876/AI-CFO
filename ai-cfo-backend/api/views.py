@@ -6,8 +6,9 @@ from .models import (
     UploadedFile, ParsedRecord,
     Transaction, DepartmentData,
     KPISnapshot, ForecastResult, AnomalyLog, Recommendation,
-    DataSource, ConnectorSyncLog, Budget, PurchaseOrder, Invoice
+    DataSource, ConnectorSyncLog, Budget, PurchaseOrder, Invoice, NotificationMeta
 )
+from django.utils import timezone
 from .serializers import (
     UploadedFileSerializer, ParsedRecordSerializer,
     TransactionSerializer, DepartmentDataSerializer,
@@ -628,3 +629,85 @@ def update_invoice_status(request, invoice_id):
     except Exception as e:
         logger.error(f"Error updating invoice: {str(e)}")
         return Response({'success': False, 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@api_view(['GET'])
+def notifications_count(request):
+    """
+    GET /api/notifications/count/?bot_id=123
+    Returns the number of unseen announcements since last_seen_at.
+    """
+    bot_id = request.query_params.get('bot_id')
+    if not bot_id:
+        return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    meta, _ = NotificationMeta.objects.get_or_create(bot_id=bot_id)
+    last_seen = meta.last_seen_at
+
+    # Count how many of each notification type were created after 'last_seen'
+    unseen_anomalies = AnomalyLog.objects.filter(bot_id=bot_id, detected_at__gt=last_seen).count()
+    unseen_recs = Recommendation.objects.filter(bot_id=bot_id, created_at__gt=last_seen).count()
+    unseen_uploads = UploadedFile.objects.filter(bot_id=bot_id, uploaded_at__gt=last_seen).count()
+
+    total_unseen = unseen_anomalies + unseen_recs + unseen_uploads
+
+    return Response({'count': total_unseen})
+
+
+@api_view(['GET'])
+def notifications_list(request):
+    """
+    GET /api/notifications/?bot_id=123
+    Aggregates news from Anomalies, Recommendations, and File Uploads.
+    Also updates last_seen_at for the bot_id.
+    """
+    bot_id = request.query_params.get('bot_id')
+    if not bot_id:
+        return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Mark as seen
+    meta, _ = NotificationMeta.objects.get_or_create(bot_id=bot_id)
+    meta.last_seen_at = timezone.now()
+    meta.save()
+
+    # 1. Fetch Anomalies
+    anomalies = AnomalyLog.objects.filter(bot_id=bot_id).order_by('-detected_at')[:10]
+    
+    # 2. Fetch Recommendations
+    recommendations = Recommendation.objects.filter(bot_id=bot_id).order_by('-created_at')[:10]
+
+    # 3. Fetch Recent Uploads
+    uploads = UploadedFile.objects.filter(bot_id=bot_id).order_by('-uploaded_at')[:10]
+
+    # Format into a unified structure
+    unified = []
+
+    for a in anomalies:
+        unified.append({
+            'id': f"anomaly_{a.id}",
+            'title': f"{a.severity.upper()} Spend Alert: {a.category}",
+            'description': a.description,
+            'time': a.detected_at.isoformat(),
+            'type': 'fraud' if a.severity in ['high', 'critical'] else 'warning',
+        })
+
+    for r in recommendations:
+        unified.append({
+            'id': f"rec_{r.id}",
+            'title': f"AI CFO Advice: {r.title}",
+            'description': r.detail,
+            'time': r.created_at.isoformat(),
+            'type': 'info' if r.priority == 'info' else 'action',
+        })
+
+    for u in uploads:
+        unified.append({
+            'id': f"upload_{u.id}",
+            'title': f"File Processed: {u.original_filename}",
+            'description': f"Successfully parsed {u.row_count} records." if u.status == 'completed' else f"Failed: {u.error_message}",
+            'time': u.uploaded_at.isoformat(),
+            'type': 'success' if u.status == 'completed' else 'error',
+        })
+
+    # Sort descending by time
+    unified.sort(key=lambda x: x['time'], reverse=True)
+
+    return Response(unified[:20])

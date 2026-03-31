@@ -12,7 +12,9 @@ from .views import (
     # Sprint 7: Budgeting & Forecasting
     BudgetListCreateView, upload_budget, variance_analysis, monte_carlo_simulation,
     # Sprint 8: Invoice & AP Automation
-    PurchaseOrderListCreateView, InvoiceListView, upload_invoice, update_invoice_status
+    PurchaseOrderListCreateView, InvoiceListView, upload_invoice, update_invoice_status,
+    # New: Unified Notifications
+    notifications_list, notifications_count
 )
 
 urlpatterns = [
@@ -59,4 +61,7 @@ urlpatterns = [
     path('invoices/', InvoiceListView.as_view(), name='invoice-list'),
     path('invoices/upload/', upload_invoice, name='invoice-upload'),
     path('invoices/<int:invoice_id>/status/', update_invoice_status, name='update-invoice-status'),
+    # New: Unified Notifications
+    path('notifications/', notifications_list, name='notifications-list'),
+    path('notifications/count/', notifications_count, name='notifications-count'),
 ]

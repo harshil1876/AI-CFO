@@ -93,11 +93,11 @@ export default function BudgetPanel({ botId }: { botId: string }) {
     <div className="space-y-6">
       {/* Header & Tabs */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
-        <div className="flex bg-white/5 rounded-xl p-1">
+        <div className="flex bg-black/20 border border-amber-500/10 rounded-xl p-1">
           <button
             onClick={() => setActiveTab("variance")}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeTab === "variance" ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "text-gray-400 hover:text-white"
+              activeTab === "variance" ? "bg-amber-600 text-white shadow-lg shadow-amber-500/20" : "text-gray-400 hover:text-white"
             }`}
           >
             Variance Analysis
@@ -105,7 +105,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
           <button
             onClick={() => setActiveTab("builder")}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeTab === "builder" ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20" : "text-gray-400 hover:text-white"
+              activeTab === "builder" ? "bg-yellow-700 text-white shadow-lg shadow-yellow-800/20" : "text-gray-400 hover:text-white"
             }`}
           >
             Budget Builder
@@ -113,7 +113,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
           <button
             onClick={() => setActiveTab("montecarlo")}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeTab === "montecarlo" ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20" : "text-gray-400 hover:text-white"
+              activeTab === "montecarlo" ? "bg-amber-800 text-white shadow-lg shadow-amber-900/20" : "text-gray-400 hover:text-white"
             }`}
           >
             Monte Carlo Simulation
@@ -126,7 +126,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
             type="month" 
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="bg-[#080d18] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+            className="bg-[#0a1128] border border-amber-500/10 rounded-lg px-3 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none"
           />
         </div>
       </div>
@@ -145,7 +145,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
                 <label className="block text-xs text-gray-400 mb-1">Category / Department</label>
                 <input 
                   type="text" placeholder="e.g. Marketing, Engineering, Travel" 
-                  className="w-full bg-[#080d18] border border-white/10 rounded-xl px-4 py-2 focus:ring-1 focus:ring-blue-500 outline-none placeholder-gray-600"
+                  className="w-full bg-[#0a1128] border border-amber-500/10 rounded-xl px-4 py-2 focus:ring-1 focus:ring-amber-500 outline-none placeholder-gray-600"
                   value={newCategory} onChange={(e) => setNewCategory(e.target.value)}
                 />
               </div>
@@ -153,14 +153,14 @@ export default function BudgetPanel({ botId }: { botId: string }) {
                 <label className="block text-xs text-gray-400 mb-1">Allocated Amount ($)</label>
                 <input 
                   type="number" placeholder="5000.00" 
-                  className="w-full bg-[#080d18] border border-white/10 rounded-xl px-4 py-2 focus:ring-1 focus:ring-blue-500 outline-none placeholder-gray-600"
+                  className="w-full bg-[#0a1128] border border-amber-500/10 rounded-xl px-4 py-2 focus:ring-1 focus:ring-amber-500 outline-none placeholder-gray-600"
                   value={newAmount} onChange={(e) => setNewAmount(e.target.value)}
                 />
               </div>
               <button 
                 onClick={handleManualSave}
                 disabled={!newCategory || !newAmount}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-2 font-medium transition-colors disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black rounded-xl py-2 font-bold transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50"
               >
                 Save Allocation
               </button>
@@ -188,7 +188,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {budgets.map(b => (
-                  <div key={b.id} className="bg-[#080d18] border border-white/5 rounded-xl p-4 shadow-inner">
+                  <div key={b.id} className="bg-[#0a1128] border border-amber-500/10 rounded-xl p-4">
                     <p className="text-gray-500 text-xs truncate mb-1">{b.category}</p>
                     <p className="text-lg font-semibold text-white tracking-tight">${Number(b.allocated_amount).toLocaleString()}</p>
                     <p className="text-[10px] text-gray-600 mt-2 text-right">v{b.version}</p>
@@ -203,7 +203,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
       {activeTab === "variance" && varianceData && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
           {varianceData.error ? (
-            <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-12 flex flex-col justify-center items-center text-center">
+            <div className="rounded-2xl border border-dashed border-amber-500/10 bg-[#0a1128] p-12 flex flex-col justify-center items-center text-center">
               <div className="text-5xl mb-4 opacity-50 ml-4">🤷‍♂️📊</div>
               <h3 className="text-lg font-semibold mb-2">No Active Data Found</h3>
               <p className="text-sm text-gray-400 max-w-md">
@@ -216,11 +216,11 @@ export default function BudgetPanel({ botId }: { botId: string }) {
             <>
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 border-l-4 border-l-blue-500">
+                <div className="rounded-2xl border border-amber-500/10 bg-[#0a1128] p-5 border-l-4 border-l-amber-500">
               <p className="text-xs text-gray-400 uppercase tracking-wider">Total Budgeted</p>
               <p className="text-2xl font-bold mt-1">${varianceData.total_budget.toLocaleString()}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 border-l-4 border-l-purple-500">
+            <div className="rounded-2xl border border-amber-500/10 bg-[#0a1128] p-5 border-l-4 border-l-yellow-600">
               <p className="text-xs text-gray-400 uppercase tracking-wider">Total Actual Spend</p>
               <p className="text-2xl font-bold mt-1">${varianceData.total_actual.toLocaleString()}</p>
             </div>
@@ -236,7 +236,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
           </div>
 
           {/* Chart */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+          <div className="rounded-2xl border border-amber-500/10 bg-[#0a1128] p-6">
             <h3 className="text-lg font-semibold mb-6">Budget vs Actuals by Category</h3>
             <div className="h-[400px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -246,12 +246,12 @@ export default function BudgetPanel({ botId }: { botId: string }) {
                   <YAxis stroke="#ffffff50" tick={{fill: '#ffffff80', fontSize: 12}} axisLine={false} tickLine={false} tickFormatter={(val: number) => `$${val/1000}k`} />
                   <Tooltip 
                     cursor={{fill: '#ffffff05'}}
-                    contentStyle={{ backgroundColor: '#080d18', borderColor: '#ffffff20', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.5)' }}
-                    itemStyle={{ color: '#fff' }}
+                    contentStyle={{ backgroundColor: '#0a1128', borderColor: 'rgba(245,158,11,0.2)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.5)' }}
+                    itemStyle={{ color: '#fbbf24' }}
                   />
                   <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                  <Bar dataKey="budgeted" name="Budget" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={60} />
-                  <Bar dataKey="actual" name="Actual Spend" fill="#a855f7" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                  <Bar dataKey="budgeted" name="Budget" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                  <Bar dataKey="actual" name="Actual Spend" fill="#78350f" radius={[4, 4, 0, 0]} maxBarSize={60} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -263,10 +263,10 @@ export default function BudgetPanel({ botId }: { botId: string }) {
 
       {activeTab === "montecarlo" && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-center shadow-lg">
-            <h3 className="text-lg font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">Monte Carlo Simulation</h3>
+          <div className="rounded-2xl border border-amber-500/10 bg-[#0a1128] p-6 text-center shadow-lg">
+            <h3 className="text-lg font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-yellow-500">Monte Carlo Simulation</h3>
             <p className="text-gray-400 text-sm max-w-2xl mx-auto">
-              We simulated <strong className="text-emerald-400">1,000 algorithmic futures</strong> based on your historical cash flow variance (Mean: ${monteCarloData?.historical_mean?.toLocaleString() || 0}). 
+              We simulated <strong className="text-amber-400">1,000 algorithmic futures</strong> based on your historical cash flow variance (Mean: ${monteCarloData?.historical_mean?.toLocaleString() || 0}). 
               Below is the 12-month projected probability tunnel for upcoming expenses/cash flows.
             </p>
           </div>
@@ -282,14 +282,14 @@ export default function BudgetPanel({ botId }: { botId: string }) {
               </p>
             </div>
           ) : monteCarloData?.projections ? (
-            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+            <div className="rounded-2xl border border-amber-500/10 bg-[#0a1128] p-6">
               <div className="h-[500px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monteCarloData.projections} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <defs>
                       <linearGradient id="colorExpected" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
                       </linearGradient>
                       <linearGradient id="colorWorst" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1}/>
@@ -300,7 +300,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
                     <XAxis dataKey="month_year" stroke="#ffffff50" tick={{fill: '#ffffff80', fontSize: 12}} axisLine={false} tickLine={false} />
                     <YAxis stroke="#ffffff50" tick={{fill: '#ffffff80', fontSize: 12}} axisLine={false} tickLine={false} tickFormatter={(val: number) => `$${val/1000}k`} />
                     <Tooltip 
-                      contentStyle={{ backgroundColor: '#080d18', borderColor: '#ffffff20', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.5)' }}
+                      contentStyle={{ backgroundColor: '#0a1128', borderColor: 'rgba(245,158,11,0.2)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.5)' }}
                       itemStyle={{ color: '#fff', fontSize: '12px' }}
                       labelStyle={{ color: '#aaa', marginBottom: '8px' }}
                     />
@@ -308,15 +308,15 @@ export default function BudgetPanel({ botId }: { botId: string }) {
                     
                     {/* The bounds of the simulation */}
                     <Area type="monotone" dataKey="p90_worst_case" name="90th Percentile (Worst Case)" stroke="#ef4444" strokeDasharray="5 5" fillOpacity={1} fill="url(#colorWorst)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="p50_expected" name="50th Percentile (Expected)" stroke="#10b981" fillOpacity={1} fill="url(#colorExpected)" strokeWidth={3} />
-                    <Area type="monotone" dataKey="p10_best_case" name="10th Percentile (Best Case)" stroke="#3b82f6" strokeDasharray="3 3" fill="none" strokeWidth={2} />
+                    <Area type="monotone" dataKey="p50_expected" name="50th Percentile (Expected)" stroke="#f59e0b" fillOpacity={1} fill="url(#colorExpected)" strokeWidth={3} />
+                    <Area type="monotone" dataKey="p10_best_case" name="10th Percentile (Best Case)" stroke="#fde68a" strokeDasharray="3 3" fill="none" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
           ) : (
             <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
             </div>
           )}
         </div>

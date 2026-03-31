@@ -110,12 +110,12 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
   return (
     <div className="space-y-6">
       {/* Header & Tabs */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
-        <div className="flex bg-white/5 rounded-xl p-1">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-amber-500/10 pb-4">
+        <div className="flex bg-black/20 border border-amber-500/10 rounded-xl p-1">
           <button
             onClick={() => setActiveTab("upload")}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeTab === "upload" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-gray-400 hover:text-white"
+              activeTab === "upload" ? "bg-amber-600 text-white shadow-lg shadow-amber-500/20" : "text-gray-400 hover:text-white"
             }`}
           >
             Process Invoice
@@ -123,7 +123,7 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
           <button
             onClick={() => setActiveTab("invoices")}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeTab === "invoices" ? "bg-amber-600 text-white shadow-lg shadow-amber-500/20" : "text-gray-400 hover:text-white"
+              activeTab === "invoices" ? "bg-yellow-600 text-white shadow-lg shadow-yellow-500/20" : "text-gray-400 hover:text-white"
             }`}
           >
             Invoice Inbox
@@ -131,7 +131,7 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
           <button
             onClick={() => setActiveTab("pos")}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeTab === "pos" ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20" : "text-gray-400 hover:text-white"
+              activeTab === "pos" ? "bg-amber-800 text-white shadow-lg shadow-amber-900/20" : "text-gray-400 hover:text-white"
             }`}
           >
             Purchase Orders
@@ -144,7 +144,7 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
           
           {!isProcessing && !currentResult && (
             <div 
-              className="rounded-2xl border-2 border-dashed border-indigo-500/30 bg-indigo-500/5 p-16 flex flex-col justify-center items-center text-center cursor-pointer hover:bg-indigo-500/10 transition-colors"
+              className="rounded-2xl border-2 border-dashed border-amber-500/30 bg-amber-500/5 p-16 flex flex-col justify-center items-center text-center cursor-pointer hover:bg-amber-500/10 transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="text-5xl mb-4 opacity-80">📄 ✨</div>
@@ -152,7 +152,7 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
               <p className="text-sm text-gray-400 max-w-sm mb-6">
                 Drag & drop or click to upload a PDF/Image. Our multimodal Gemini Vision model will extract fields, perform math integrity checks, and cross-reference POs.
               </p>
-              <button className="bg-white hover:bg-gray-100 text-black px-6 py-2 rounded-xl font-semibold transition-all">
+              <button className="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black font-bold px-6 py-2 rounded-xl transition-all shadow-lg shadow-amber-500/20">
                 Select File
               </button>
               <input 
@@ -166,11 +166,11 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
           )}
 
           {isProcessing && (
-            <div className="rounded-2xl border border-white/10 bg-[#080d18] p-16 flex flex-col justify-center items-center text-center shadow-xl">
+            <div className="rounded-2xl border border-amber-500/10 bg-[#0a1128] p-16 flex flex-col justify-center items-center text-center shadow-xl">
               <div className="relative w-32 h-32 mb-8">
                 {/* Glowing ring animation */}
-                <div className="absolute inset-0 rounded-full border-b-2 border-indigo-500 animate-spin"></div>
-                <div className="absolute inset-2 rounded-full border-t-2 border-cyan-400 animate-spin flex items-center justify-center" style={{ animationDuration: '2s', animationDirection: 'reverse' }}>
+                <div className="absolute inset-0 rounded-full border-b-2 border-amber-500 animate-spin"></div>
+                <div className="absolute inset-2 rounded-full border-t-2 border-yellow-300 animate-spin flex items-center justify-center" style={{ animationDuration: '2s', animationDirection: 'reverse' }}>
                   <span className="text-2xl">🤖</span>
                 </div>
               </div>
@@ -178,7 +178,7 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
               
               <div className="w-full max-w-md bg-white/5 rounded-full h-2 mt-4 overflow-hidden">
                 <div 
-                  className="bg-gradient-to-r from-indigo-500 to-cyan-400 h-2 transition-all duration-300 ease-out" 
+                  className="bg-gradient-to-r from-amber-500 to-yellow-500 h-2 transition-all duration-300 ease-out" 
                   style={{ width: `${Math.min(scanProgress, 100)}%` }}
                 ></div>
               </div>
@@ -191,10 +191,10 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
               
               {/* Left Column: Summary */}
               <div className="lg:col-span-1 space-y-4">
-                <div className={`rounded-2xl border bg-[#080d18] p-6 shadow-xl ${getFraudBorderColor(currentResult.fraud_score)}`}>
+                <div className={`rounded-2xl border bg-[#0a1128] p-6 shadow-xl ${getFraudBorderColor(currentResult.fraud_score)}`}>
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="text-sm text-gray-400 uppercase tracking-wider font-semibold">Fraud Intelligence</h3>
-                    <div className="bg-[#0f172a] p-2 rounded-lg">🛡️</div>
+                    <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded-lg">🛡️</div>
                   </div>
                   <div className="flex items-end gap-2 mb-4">
                     <p className={`text-4xl font-bold ${getFraudColor(currentResult.fraud_score)}`}>{currentResult.fraud_score}%</p>
@@ -216,7 +216,7 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
                   )}
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-[#080d18] p-6 shadow-xl">
+                <div className="rounded-2xl border border-amber-500/10 bg-[#0a1128] p-6 shadow-xl">
                   <h3 className="text-sm text-gray-400 uppercase tracking-wider font-semibold mb-4">Action Required</h3>
                   
                   <div className="mb-4">
@@ -237,7 +237,7 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
                     <div className="flex gap-2 mt-6">
                       <button 
                         onClick={() => handleStatusUpdate(currentResult.id, "approved")}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-sm font-semibold transition-colors">
+                        className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black rounded-xl py-2 text-sm font-bold transition-all shadow-lg shadow-amber-500/20">
                         Approve
                       </button>
                       <button 
@@ -258,7 +258,7 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
               </div>
 
               {/* Right Column: Invoice Details */}
-              <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-[#080d18] p-6 shadow-xl">
+              <div className="lg:col-span-2 rounded-2xl border border-amber-500/10 bg-[#0a1128] p-6 shadow-xl">
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <h2 className="text-2xl font-bold">{currentResult.vendor_name}</h2>
@@ -266,7 +266,7 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-gray-500 mb-1">Total Amount</p>
-                    <p className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">
+                    <p className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-yellow-500">
                       ${Number(currentResult.total_amount).toLocaleString()}
                     </p>
                   </div>
@@ -275,7 +275,7 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
                 <h3 className="text-sm border-b border-white/10 pb-2 mb-4 font-semibold text-gray-300">Line Items</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
-                    <thead className="text-xs text-gray-500 bg-white/5">
+                    <thead className="text-xs text-gray-500 bg-amber-500/5 border-b border-amber-500/10">
                       <tr>
                         <th className="px-4 py-2 rounded-tl-lg">Description</th>
                         <th className="px-4 py-2 text-right rounded-tr-lg">Amount</th>
@@ -295,10 +295,10 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
                 {currentResult.additional_notes && (
                   <div className="mt-6 pt-4 border-t border-white/10">
                     <h3 className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2 flex items-center gap-2">
-                       <span className="text-indigo-400">📝</span> 
+                     <span className="text-amber-400">📝</span> 
                        Additional Notes Extracted
                     </h3>
-                    <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap bg-white/5 p-4 rounded-xl border border-white/5">
+                    <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap bg-amber-500/5 p-4 rounded-xl border border-amber-500/10">
                       {currentResult.additional_notes}
                     </p>
                   </div>
@@ -311,14 +311,14 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
       )}
 
       {activeTab === "invoices" && (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 animate-in fade-in duration-500">
+        <div className="rounded-2xl border border-amber-500/10 bg-[#0a1128] p-6 animate-in fade-in duration-500">
           <h3 className="text-lg font-semibold mb-6">Invoice Inbox</h3>
           {invoices.length === 0 ? (
             <p className="text-sm text-gray-400">No invoices processed yet.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left whitespace-nowrap">
-                <thead className="text-xs text-gray-500 bg-white/5 uppercase border-b border-white/10">
+                <thead className="text-xs text-gray-500 bg-amber-500/5 uppercase border-b border-amber-500/10">
                   <tr>
                     <th className="px-4 py-3">Vendor</th>
                     <th className="px-4 py-3">Date</th>
@@ -368,20 +368,20 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
       )}
 
       {activeTab === "pos" && (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 animate-in fade-in duration-500">
+        <div className="rounded-2xl border border-amber-500/10 bg-[#0a1128] p-6 animate-in fade-in duration-500">
           <h3 className="text-lg font-semibold mb-6">Purchase Orders</h3>
           {pos.length === 0 ? (
             <p className="text-sm text-gray-400">No Purchase Orders available.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {pos.map(p => (
-                <div key={p.id} className="bg-[#080d18] border border-white/5 rounded-xl p-5 shadow-lg">
+                <div key={p.id} className="bg-[#0a1128] border border-amber-500/10 rounded-xl p-5 shadow-lg">
                   <div className="flex justify-between items-start mb-2">
                     <p className="text-gray-400 text-xs font-medium">#{p.po_number}</p>
                     <span className="text-[10px] uppercase font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded">{p.status}</span>
                   </div>
                   <h4 className="font-bold text-lg">{p.vendor_name}</h4>
-                  <p className="text-xl font-medium text-emerald-400 mt-2">${Number(p.expected_amount).toLocaleString()}</p>
+                  <p className="text-xl font-medium text-amber-400 mt-2">${Number(p.expected_amount).toLocaleString()}</p>
                 </div>
               ))}
             </div>

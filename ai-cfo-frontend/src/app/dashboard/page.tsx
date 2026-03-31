@@ -15,14 +15,18 @@ export default function DashboardOverviewPage() {
 
     return (
         <div className="flex-1 overflow-y-auto w-full h-full flex flex-col">
-            <header className="flex items-center justify-between border-b border-white/5 bg-[#080d18]/50 px-8 py-4 shrink-0">
+            <header className="flex items-center justify-between px-8 py-8 shrink-0">
                 <div>
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <span>📊</span> Financial Overview
+                    <h2 className="text-2xl font-bold text-white tracking-tight">
+                        Financial Overview
                     </h2>
-                    <p className="text-xs text-gray-500">
-                        View real-time Key Performance Indicators and historical trends.
+                    <p className="text-sm text-slate-400 mt-1">
+                        Real-time KPIs and historical trends for your organization.
                     </p>
+                </div>
+                <div className="hidden md:flex items-center gap-2 rounded-full border border-[#1e2637] bg-[#1e2637]/30 px-4 py-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span className="text-xs text-slate-300 font-medium tracking-wide lowercase">Live Data Feed</span>
                 </div>
             </header>
             
@@ -31,9 +35,10 @@ export default function DashboardOverviewPage() {
                 <MetricsGrid botId={BOT_ID} />
                 
                 {/* 2. Advanced AI Charting (Sprint 3 Enhancement) */}
-                <div className="rounded-2xl border border-white/10 bg-[#080d18] p-6 shadow-xl">
-                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                        <span className="text-emerald-400">📈</span> Revenue vs Expenses Trend
+                <div className="rounded-2xl border border-[#1e2637] bg-[#121622] p-8 shadow-xl">
+                    <h3 className="text-lg font-bold mb-8 flex items-center gap-3 text-white">
+                        <span className="h-8 w-1 bg-amber-500 rounded-full"></span>
+                        Revenue vs Expenses Trend
                     </h3>
                     <FinancialChart botId={BOT_ID} />
                 </div>

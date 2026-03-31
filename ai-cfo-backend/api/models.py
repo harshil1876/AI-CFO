@@ -290,3 +290,12 @@ class Invoice(models.Model):
 
     def __str__(self):
         return f"{self.vendor_name} - {self.total_amount}"
+
+
+class NotificationMeta(models.Model):
+    """Tracks the last time a bot_id viewed their notifications context."""
+    bot_id = models.CharField(max_length=255, unique=True, db_index=True)
+    last_seen_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Meta [{self.bot_id}] — Last seen: {self.last_seen_at}"

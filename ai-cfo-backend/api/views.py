@@ -711,3 +711,91 @@ def notifications_list(request):
     unified.sort(key=lambda x: x['time'], reverse=True)
 
     return Response(unified[:20])
+
+
+# =====================================================
+# Sprint 10: Financial Reporting & Dashboards
+# =====================================================
+
+from api.services.reporting_logic import generate_pnl, generate_cashflow, generate_balancesheet
+import pandas as pd
+from django.http import HttpResponse
+
+@api_view(['GET'])
+def report_pnl(request):
+    bot_id = request.query_params.get('bot_id')
+    start_date = request.query_params.get('start_date')
+    end_date = request.query_params.get('end_date')
+
+    if not bot_id:
+        return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    data = generate_pnl(bot_id, start_date, end_date)
+    return Response(data)
+
+@api_view(['GET'])
+def report_cashflow(request):
+    bot_id = request.query_params.get('bot_id')
+    start_date = request.query_params.get('start_date')
+    end_date = request.query_params.get('end_date')
+
+    if not bot_id:
+        return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    data = generate_cashflow(bot_id, start_date, end_date)
+    return Response(data)
+
+@api_view(['GET'])
+def report_balancesheet(request):
+    bot_id = request.query_params.get('bot_id')
+    target_date = request.query_params.get('target_date')
+
+    if not bot_id:
+        return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    data = generate_balancesheet(bot_id, target_date)
+    return Response(data)
+
+@api_view(['GET'])
+def report_export_excel(request):
+    """
+    Generates an Excel document for the requested report type using pandas.
+    """
+    bot_id = request.query_params.get('bot_id')
+    report_type = request.query_params.get('type')  # pnl, cashflow, balancesheet
+    
+    if not bot_id or not report_type:
+        return Response({'error': 'bot_id and type are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    data = None
+    if report_type == 'pnl':
+        data = generate_pnl(bot_id)
+        # Flatten dictionary to list of dicts for pandas
+        rows = []
+        for section in ['Revenue', 'COGS', 'OPEX']:
+            for item, amt in data.get(section, {}).get('items', {}).items():
+                rows.append({'Section': section, 'Account': item, 'Amount': amt})
+        df = pd.DataFrame(rows)
+
+    elif report_type == 'cashflow':
+        data = generate_cashflow(bot_id)
+        rows = []
+        for section in ['OperatingActivities', 'InvestingActivities', 'FinancingActivities']:
+            rows.append({'Section': section, 'Inflows': data[section]['inflows'], 'Outflows': data[section]['outflows'], 'Net': data[section]['net_cash']})
+        df = pd.DataFrame(rows)
+
+    elif report_type == 'balancesheet':
+        data = generate_balancesheet(bot_id)
+        rows = []
+        for section in ['Assets', 'Liabilities', 'Equity']:
+            for item, amt in data.get(section, {}).get('items', {}).items():
+                rows.append({'Section': section, 'Account': item, 'Amount': amt})
+        df = pd.DataFrame(rows)
+    else:
+        return Response({'error': 'invalid report type'}, status=status.HTTP_400_BAD_REQUEST)
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename=financial_report_{report_type}_{bot_id}.xlsx'
+    df.to_excel(response, index=False, engine='openpyxl')
+    
+    return response

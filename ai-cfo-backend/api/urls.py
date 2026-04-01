@@ -14,7 +14,9 @@ from .views import (
     # Sprint 8: Invoice & AP Automation
     PurchaseOrderListCreateView, InvoiceListView, upload_invoice, update_invoice_status,
     # New: Unified Notifications
-    notifications_list, notifications_count
+    notifications_list, notifications_count,
+    # Sprint 10: Dynamic Reporting
+    report_pnl, report_cashflow, report_balancesheet, report_export_excel
 )
 
 urlpatterns = [
@@ -64,4 +66,10 @@ urlpatterns = [
     # New: Unified Notifications
     path('notifications/', notifications_list, name='notifications-list'),
     path('notifications/count/', notifications_count, name='notifications-count'),
+
+    # Sprint 10: Dynamic Reporting
+    path('reports/pnl/', report_pnl, name='report-pnl'),
+    path('reports/cashflow/', report_cashflow, name='report-cashflow'),
+    path('reports/balancesheet/', report_balancesheet, name='report-balancesheet'),
+    path('reports/export/', report_export_excel, name='report-export-excel'),
 ]

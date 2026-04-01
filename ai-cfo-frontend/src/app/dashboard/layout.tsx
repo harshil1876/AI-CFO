@@ -67,6 +67,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     const tabs = [
         { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
         { href: "/dashboard/chat", label: "AI CFO Chat", icon: MessageSquare },
+        { href: "/dashboard/reports", label: "Financial Reports", icon: BarChart },
         { href: "/dashboard/budget", label: "Budgeting", icon: BarChart3 },
         { href: "/dashboard/ap", label: "Accounts Payable", icon: Receipt },
         { href: "/dashboard/upload", label: "Upload Data", icon: UploadCloud },

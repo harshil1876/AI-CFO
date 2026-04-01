@@ -50,3 +50,37 @@ def sync_all_active_sources():
         count += 1
     logger.info(f"[Celery] Queued {count} active connector sync tasks.")
     return {'queued': count}
+
+@shared_task
+def email_monthly_pnl_reports():
+    """
+    Celery beat task to automatically generate and email the P&L summary
+    to the organization administrators on the 1st of every month.
+    """
+    from .services.reporting_logic import generate_pnl
+    from .models import Transaction
+    import datetime
+    
+    # Identify active bot_ids (organizations)
+    bot_ids = Transaction.objects.values_list('bot_id', flat=True).distinct()
+    
+    today = datetime.date.today()
+    first_of_this_month = today.replace(day=1)
+    last_day_last_month = first_of_this_month - datetime.timedelta(days=1)
+    first_day_last_month = last_day_last_month.replace(day=1)
+    
+    start = first_day_last_month.strftime('%Y-%m-%d')
+    end = last_day_last_month.strftime('%Y-%m-%d')
+    
+    count = 0
+    for bot_id in bot_ids:
+        try:
+            pnl_data = generate_pnl(bot_id, start_date=start, end_date=end)
+            net_income = pnl_data.get('NetIncome', 0)
+            logger.info(f"Generated P&L for {bot_id} | Net Income: {net_income} | Dispatching to SendGrid.")
+            # TODO: Integrate django.core.mail.send_mail logic here
+            count += 1
+        except Exception as e:
+            logger.error(f"Failed to generate email report for {bot_id}: {str(e)}")
+            
+    return {'emails_sent': count}

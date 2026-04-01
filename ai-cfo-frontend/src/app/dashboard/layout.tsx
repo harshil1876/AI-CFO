@@ -7,9 +7,26 @@ import {
   LayoutDashboard, MessageSquare, BarChart3, Receipt, 
   UploadCloud, Zap, FlaskConical, Link2, 
   ChevronLeft, ChevronRight, Bell, Search, 
-  LogOut, Settings, BarChart
+  LogOut, Settings, BarChart, Shield, AlertTriangle, History 
 } from "lucide-react";
 import { getAuthHeaders } from "@/lib/api";
+import { CurrencyProvider, useCurrency } from "@/context/CurrencyContext";
+
+function CurrencySwitcher() {
+    const { currency, setCurrency } = useCurrency();
+    return (
+        <select 
+            value={currency} 
+            onChange={(e) => setCurrency(e.target.value as any)}
+            className="bg-[#121622] border border-[#1e2637] rounded-lg px-2 py-1 text-xs font-semibold text-slate-300 hover:text-white transition-all outline-none focus:ring-1 focus:ring-amber-500/50"
+        >
+            <option value="USD">USD ($)</option>
+            <option value="INR">INR (₹)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
+        </select>
+    );
+}
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
     const { user, isLoaded: isUserLoaded } = useUser();
@@ -74,6 +91,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         { href: "/dashboard/pipeline", label: "Intelligence", icon: Zap },
         { href: "/dashboard/simulation", label: "Scenarios", icon: FlaskConical },
         { href: "/dashboard/connectors", label: "Connectors", icon: Link2 },
+        { href: "/dashboard/anomalies", label: "Anomaly Hub", icon: AlertTriangle },
+        { href: "/dashboard/audit", label: "Audit Trail", icon: History },
+        { href: "/dashboard/team", label: "Team Permissions", icon: Shield },
     ];
 
     // Show loading while Clerk loads
@@ -89,7 +109,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
 
     return (
-        <div className="flex h-screen bg-[#0c0f17] text-white">
+        <CurrencyProvider>
+            <div className="flex h-screen bg-[#0c0f17] text-white">
             {/* Sidebar */}
             <aside 
                 className={`flex flex-col transition-all duration-300 border-r border-[#1e2637] bg-[#121622] ${
@@ -189,6 +210,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                                 }}
                             />
                         </div>
+                        
+                        <CurrencySwitcher />
 
                         <Link href="/dashboard/notifications" className="relative group">
                             <Bell size={22} className="text-slate-300 group-hover:text-white transition-colors" />
@@ -217,5 +240,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </div>
             </main>
         </div>
-    );
+    </CurrencyProvider>
+  );
 }

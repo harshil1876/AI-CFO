@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
+import { useCurrency } from "@/context/CurrencyContext";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts";
 import { 
   FileText, Printer, RefreshCw, 
@@ -23,6 +24,7 @@ const THEME = {
 export default function ReportsPage() {
   const { getToken } = useAuth();
   const { user } = useUser();
+  const { formatAmount } = useCurrency();
   const bot_id = user?.organizationMemberships[0]?.organization?.id || "default_org";
 
   const [activeTab, setActiveTab] = useState<"pnl" | "cashflow" | "balancesheet">("pnl");
@@ -77,7 +79,13 @@ export default function ReportsPage() {
     setIsExporting(true);
     try {
       const token = await getToken();
-      const url = `http://127.0.0.1:8000/api/reports/export/?bot_id=${bot_id}&type=${activeTab}`;
+      let url = `http://127.0.0.1:8000/api/reports/export/?bot_id=${bot_id}&type=${activeTab}`;
+      if (activeTab === "balancesheet") {
+        url += `&end_date=${endDate}`;
+      } else {
+        url += `&start_date=${startDate}&end_date=${endDate}`;
+      }
+      
       const res = await fetch(url, {
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -104,7 +112,7 @@ export default function ReportsPage() {
   };
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
+    return formatAmount(val);
   };
 
   // ------------------------------------------------------------------
@@ -291,7 +299,7 @@ export default function ReportsPage() {
                       ]}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#2B3654" vertical={false} />
                         <XAxis dataKey="name" stroke="#94a3b8" />
-                        <YAxis stroke="#94a3b8" tickFormatter={(val) => `$${val / 1000}k`} />
+                        <YAxis stroke="#94a3b8" tickFormatter={(val) => `${val / 1000}k`} />
                         <RechartsTooltip 
                            contentStyle={{ backgroundColor: '#0c142e', borderColor: '#f59e0b', color: '#fff' }}
                            formatter={(value: any) => formatCurrency(Number(value) || 0)}

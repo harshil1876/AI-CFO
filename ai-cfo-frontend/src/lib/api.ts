@@ -183,7 +183,7 @@ export async function getRecommendations(
 
 export async function getUploadedFiles(
   botId: string
-): Promise<UploadedFile[]> {
+): Promise<UploadedFileRecord[]> {
   const auth = await getAuthHeaders();
   const res = await fetch(`${API_URL}/files/?bot_id=${botId}`, {
     headers: { ...auth },
@@ -495,3 +495,16 @@ export async function updateInvoiceStatus(
   }
   return res.json();
 }
+
+// -- Sprint 11 Polish: File History --
+export interface UploadedFileRecord {
+  id: number;
+  original_filename: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  row_count: number | null;
+  error_message: string | null;
+  uploaded_at: string;
+  file_type: string;
+  ai_summary: string | null;
+}
+

@@ -763,13 +763,15 @@ def report_export_excel(request):
     """
     bot_id = request.query_params.get('bot_id')
     report_type = request.query_params.get('type')  # pnl, cashflow, balancesheet
+    start_date = request.query_params.get('start_date')
+    end_date = request.query_params.get('end_date')
     
     if not bot_id or not report_type:
         return Response({'error': 'bot_id and type are required'}, status=status.HTTP_400_BAD_REQUEST)
 
     data = None
     if report_type == 'pnl':
-        data = generate_pnl(bot_id)
+        data = generate_pnl(bot_id, start_date, end_date)
         # Flatten dictionary to list of dicts for pandas
         rows = []
         for section in ['Revenue', 'COGS', 'OPEX']:
@@ -778,14 +780,14 @@ def report_export_excel(request):
         df = pd.DataFrame(rows)
 
     elif report_type == 'cashflow':
-        data = generate_cashflow(bot_id)
+        data = generate_cashflow(bot_id, start_date, end_date)
         rows = []
         for section in ['OperatingActivities', 'InvestingActivities', 'FinancingActivities']:
             rows.append({'Section': section, 'Inflows': data[section]['inflows'], 'Outflows': data[section]['outflows'], 'Net': data[section]['net_cash']})
         df = pd.DataFrame(rows)
 
     elif report_type == 'balancesheet':
-        data = generate_balancesheet(bot_id)
+        data = generate_balancesheet(bot_id, end_date or None)
         rows = []
         for section in ['Assets', 'Liabilities', 'Equity']:
             for item, amt in data.get(section, {}).get('items', {}).items():
@@ -798,4 +800,246 @@ def report_export_excel(request):
     response['Content-Disposition'] = f'attachment; filename=financial_report_{report_type}_{bot_id}.xlsx'
     df.to_excel(response, index=False, engine='openpyxl')
     
+    return response
+
+# =====================================================
+# Sprint 11: Enterprise RBAC & Team Management
+# =====================================================
+from .models import UserFeaturePermission
+from .decorators import require_feature
+
+@api_view(['GET'])
+def get_team_permissions(request):
+    """
+    Returns the granular feature permissions for all users in the organization.
+    Must be called by an org:admin.
+    """
+    bot_id = request.query_params.get('bot_id')
+    org_role = request.headers.get('X-Org-Role')
+    
+    if not bot_id:
+        return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    if org_role != 'org:admin':
+        return Response({'error': 'Only Admins can view team permissions'}, status=status.HTTP_403_FORBIDDEN)
+
+    permissions = UserFeaturePermission.objects.filter(bot_id=bot_id)
+    data = []
+    for p in permissions:
+        data.append({
+            'user_id': p.user_id,
+            'user_email': p.user_email,
+            'can_view_reports': p.can_view_reports,
+            'can_upload_data': p.can_upload_data,
+            'can_manage_budgets': p.can_manage_budgets,
+            'can_manage_ap': p.can_manage_ap,
+            'can_run_simulations': p.can_run_simulations,
+        })
+    return Response(data)
+
+@api_view(['POST'])
+def update_team_permission(request):
+    """
+    Overwrites a specific user's granular feature boolean.
+    """
+    bot_id = request.data.get('bot_id')
+    org_role = request.headers.get('X-Org-Role')
+    target_user_id = request.data.get('user_id')
+    feature_name = request.data.get('feature')  # e.g., 'can_view_reports'
+    new_value = request.data.get('value')       # bool
+    
+    if org_role != 'org:admin':
+        return Response({'error': 'Only Admins can modify team permissions'}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        perm = UserFeaturePermission.objects.get(bot_id=bot_id, user_id=target_user_id)
+        if hasattr(perm, feature_name):
+            setattr(perm, feature_name, new_value)
+            perm.save()
+            return Response({'success': True, 'message': f'Updated {feature_name} to {new_value}'})
+        else:
+            return Response({'error': 'Invalid feature name'}, status=status.HTTP_400_BAD_REQUEST)
+    except UserFeaturePermission.DoesNotExist:
+        # If the user doesn't exist in our DB yet, create them with defaults
+        user_email = request.data.get('user_email', 'unknown@email.com')
+        perm = UserFeaturePermission(bot_id=bot_id, user_id=target_user_id, user_email=user_email)
+        if hasattr(perm, feature_name):
+            setattr(perm, feature_name, new_value)
+        perm.save()
+        return Response({'success': True, 'message': f'Created rules and set {feature_name} to {new_value}'})
+
+# =====================================================
+# Sprint 11: Phase 2 — Collaborative Anomaly Workflows
+# =====================================================
+from .models import AnomalyComment
+from .services.audit_service import log_event
+import json
+
+
+@api_view(['PATCH'])
+def update_anomaly_status(request, anomaly_id):
+    """
+    PATCH /api/anomalies/<id>/status/
+    Updates resolution status and/or assigned_to for an Anomaly.
+    """
+    try:
+        bot_id = request.data.get('bot_id') or request.query_params.get('bot_id')
+        anomaly = AnomalyLog.objects.get(id=anomaly_id, bot_id=bot_id)
+
+        new_status = request.data.get('status')
+        assigned_to = request.data.get('assigned_to')
+
+        if new_status and new_status in ['open', 'in-review', 'resolved']:
+            anomaly.status = new_status
+            if new_status == 'resolved':
+                anomaly.is_resolved = True
+        if assigned_to is not None:
+            anomaly.assigned_to = assigned_to
+
+        anomaly.save()
+        log_event(request, 'ANOMALY_STATUS_UPDATE', 'Anomaly', anomaly_id,
+                  json.dumps({'newStatus': new_status, 'assignedTo': assigned_to}))
+
+        return Response({'success': True, 'status': anomaly.status, 'assigned_to': anomaly.assigned_to})
+
+    except AnomalyLog.DoesNotExist:
+        return Response({'error': 'Anomaly not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET', 'POST'])
+def anomaly_comments(request, anomaly_id):
+    """
+    GET  /api/anomalies/<id>/comments/ — fetch all comments
+    POST /api/anomalies/<id>/comments/ — add a new comment with @mention detection
+    """
+    bot_id = request.query_params.get('bot_id') or request.data.get('bot_id')
+
+    if request.method == 'GET':
+        comments = AnomalyComment.objects.filter(anomaly_id=anomaly_id, bot_id=bot_id).order_by('created_at')
+        data = [
+            {'id': c.id, 'user_id': c.user_id, 'user_email': c.user_email,
+             'text': c.text, 'created_at': c.created_at.isoformat()}
+            for c in comments
+        ]
+        return Response(data)
+
+    elif request.method == 'POST':
+        user_id = request.headers.get('X-User-Id', 'anonymous')
+        user_email = request.headers.get('X-User-Email', request.data.get('user_email', 'user@cfol.ai'))
+        text = request.data.get('text', '').strip()
+
+        if not text:
+            return Response({'error': 'Comment text is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            anomaly = AnomalyLog.objects.get(id=anomaly_id, bot_id=bot_id)
+        except AnomalyLog.DoesNotExist:
+            return Response({'error': 'Anomaly not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        comment = AnomalyComment.objects.create(
+            bot_id=bot_id, anomaly=anomaly,
+            user_id=user_id, user_email=user_email, text=text,
+        )
+
+        # @mention email trigger
+        import re
+        mentions = re.findall(r'@([\w.+-]+@[\w-]+\.[a-zA-Z]+)', text)
+        if mentions:
+            try:
+                from django.core.mail import send_mail
+                for email in mentions:
+                    send_mail(
+                        subject=f'[CFOlytics] {user_email} mentioned you in an anomaly',
+                        message=(
+                            f'Hi,\n\n{user_email} mentioned you on a {anomaly.severity.upper()} anomaly:\n\n'
+                            f'Anomaly: "{anomaly.description[:100]}"\n\n'
+                            f'Comment: "{text}"\n\nLog in to CFOlytics to respond.\n\nCFOlytics'
+                        ),
+                        from_email='noreply@cfol.ai',
+                        recipient_list=[email],
+                        fail_silently=True,
+                    )
+            except Exception:
+                pass
+
+        log_event(request, 'ANOMALY_COMMENT_ADDED', 'Anomaly', anomaly_id, text[:200])
+
+        return Response({
+            'id': comment.id, 'user_email': comment.user_email,
+            'text': comment.text, 'created_at': comment.created_at.isoformat(),
+        }, status=status.HTTP_201_CREATED)
+
+
+# =====================================================
+# Sprint 11: Phase 3 — Immutable Audit Trail
+# =====================================================
+from .models import AuditEvent
+import csv
+from django.http import HttpResponse as DjangoHttpResponse
+
+
+@api_view(['GET'])
+def audit_trail(request):
+    """
+    GET /api/audit/?bot_id=xxx
+    Returns paginated audit log. Admin-only.
+    """
+    bot_id = request.query_params.get('bot_id')
+    org_role = request.headers.get('X-Org-Role')
+
+    if not bot_id:
+        return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+    if org_role != 'org:admin':
+        return Response({'error': 'Only Admins can view audit logs'}, status=status.HTTP_403_FORBIDDEN)
+
+    page = int(request.query_params.get('page', 1))
+    per_page = 50
+    offset = (page - 1) * per_page
+
+    events = AuditEvent.objects.filter(bot_id=bot_id).order_by('-timestamp')[offset: offset + per_page]
+    total = AuditEvent.objects.filter(bot_id=bot_id).count()
+
+    data = [
+        {
+            'id': e.id,
+            'user_email': e.user_email,
+            'action': e.action,
+            'resource_type': e.resource_type,
+            'resource_id': e.resource_id,
+            'details': e.details,
+            'ip_address': str(e.ip_address) if e.ip_address else None,
+            'timestamp': e.timestamp.isoformat(),
+        }
+        for e in events
+    ]
+    return Response({'results': data, 'total': total, 'page': page})
+
+
+@api_view(['GET'])
+def audit_export_csv(request):
+    """
+    GET /api/audit/export/?bot_id=xxx
+    Streams full audit trail as CSV. Admin-only.
+    """
+    bot_id = request.query_params.get('bot_id')
+    org_role = request.headers.get('X-Org-Role')
+
+    if not bot_id:
+        return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+    if org_role != 'org:admin':
+        return Response({'error': 'Only Admins can export audit logs'}, status=status.HTTP_403_FORBIDDEN)
+
+    events = AuditEvent.objects.filter(bot_id=bot_id).order_by('-timestamp')
+    response = DjangoHttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="audit_trail_{bot_id}.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Timestamp', 'User Email', 'Action', 'Resource Type', 'Resource ID', 'Details', 'IP Address'])
+    for e in events:
+        writer.writerow([
+            e.timestamp.strftime('%Y-%m-%d %H:%M:%S'), e.user_email, e.action,
+            e.resource_type, e.resource_id, e.details, e.ip_address or '',
+        ])
     return response

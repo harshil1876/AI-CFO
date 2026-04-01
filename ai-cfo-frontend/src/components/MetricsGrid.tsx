@@ -1,54 +1,151 @@
 import { useEffect, useState } from "react";
 import { getKPIs, type KPI } from "@/lib/api";
-import { TrendingUp, Wallet, CreditCard, Target } from "lucide-react";
+import { useCurrency } from "@/context/CurrencyContext";
+import { TrendingUp, TrendingDown, Wallet, CreditCard, Target, AlertTriangle, Activity } from "lucide-react";
+
+interface MetricCard {
+    title: string;
+    value: string;
+    subValue?: string;
+    trend?: number; // positive = good (green), negative = bad (red)
+    trendLabel?: string;
+    icon: React.ElementType;
+    color: string;
+    bgColor: string;
+}
 
 export default function MetricsGrid({ botId }: { botId: string }) {
     const [stats, setStats] = useState<KPI | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        setIsLoading(true);
         getKPIs(botId).then(data => {
             if (data.length > 0) {
                 setStats(data[0]);
             }
-        }).catch(console.error);
+        }).catch(console.error).finally(() => setIsLoading(false));
     }, [botId]);
 
-    if (!stats) {
-        return <div className="animate-pulse bg-amber-500/5 h-32 rounded-2xl w-full"></div>;
+    if (isLoading) {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+                {[...Array(4)].map((_, i) => (
+                    <div key={i} className="h-32 rounded-xl border border-[#1e2637] bg-[#121622] animate-pulse" />
+                ))}
+            </div>
+        );
     }
 
-    const rev = Number(stats.total_revenue || 0);
-    const exp = Number(stats.total_expenses || 0);
-    const profit = Number(stats.net_profit || 0);
-    
-    // Safely parse profit margin or calculate automatically if backend omission occurs
-    const margin = stats.profit_margin !== undefined && stats.profit_margin !== null
-        ? Number(stats.profit_margin) 
-        : (rev > 0 ? (profit / rev) * 100 : 0);
+    if (!stats) {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+                {[
+                    { title: "Total Revenue", value: "— Upload data", icon: TrendingUp, color: "text-emerald-400", bgColor: "bg-emerald-500/10" },
+                    { title: "Total Expenses", value: "— Run pipeline", icon: Wallet, color: "text-amber-400", bgColor: "bg-amber-500/10" },
+                    { title: "Net Profit", value: "— No data yet", icon: CreditCard, color: "text-blue-400", bgColor: "bg-blue-500/10" },
+                    { title: "Profit Margin", value: "—", icon: Target, color: "text-indigo-400", bgColor: "bg-indigo-500/10" },
+                ].map((card, i) => (
+                    <div key={i} className="rounded-xl border border-[#1e2637] bg-[#121622] p-5 shadow-sm">
+                        <div className="flex justify-between items-start mb-3">
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{card.title}</h3>
+                            <div className={`${card.bgColor} rounded-lg p-2`}>
+                                <card.icon size={18} className={card.color} />
+                            </div>
+                        </div>
+                        <p className="text-lg font-semibold text-slate-600">{card.value}</p>
+                    </div>
+                ))}
+            </div>
+        );
+    }
 
-    const cards = [
-        { title: "Total Revenue", value: `$${rev.toLocaleString()}`, icon: TrendingUp, color: "text-emerald-400", bgColor: "bg-emerald-500/10" },
-        { title: "Total Expenses", value: `$${exp.toLocaleString()}`, icon: Wallet, color: "text-amber-400", bgColor: "bg-amber-500/10" },
-        { title: "Net Profit", value: `$${profit.toLocaleString()}`, icon: CreditCard, color: "text-blue-400", bgColor: "bg-blue-500/10" },
-        { title: "Profit Margin", value: `${margin.toFixed(1)}%`, icon: Target, color: "text-indigo-400", bgColor: "bg-indigo-500/10" },
+    const rev    = Number(stats.total_revenue || 0);
+    const exp    = Number(stats.total_expenses || 0);
+    const profit = Number(stats.net_profit || 0);
+    const margin = stats.profit_margin !== undefined && stats.profit_margin !== null
+        ? Number(stats.profit_margin)
+        : (rev > 0 ? (profit / rev) * 100 : 0);
+    const anomalies = Number((stats as any).anomaly_count || 0);
+
+    const { formatAmount } = useCurrency();
+
+    const cards: MetricCard[] = [
+        {
+            title: "Total Revenue",
+            value: formatAmount(rev),
+            subValue: "Current Period",
+            icon: TrendingUp,
+            color: "text-emerald-400",
+            bgColor: "bg-emerald-500/10",
+        },
+        {
+            title: "Total Expenses",
+            value: formatAmount(exp),
+            subValue: margin > 0 ? `Margin ${margin.toFixed(1)}%` : undefined,
+            icon: Wallet,
+            color: "text-amber-400",
+            bgColor: "bg-amber-500/10",
+        },
+        {
+            title: "Net Profit / Loss",
+            value: formatAmount(profit),
+            subValue: profit < 0 ? "Net loss" : "Net income",
+            icon: profit >= 0 ? TrendingUp : TrendingDown,
+            color: profit >= 0 ? "text-blue-400" : "text-red-400",
+            bgColor: profit >= 0 ? "bg-blue-500/10" : "bg-red-500/10",
+        },
+        {
+            title: "Profit Margin",
+            value: `${margin.toFixed(1)}%`,
+            subValue: margin >= 20 ? "Healthy margin" : margin >= 10 ? "Moderate" : "Low — review expenses",
+            icon: Target,
+            color: margin >= 20 ? "text-emerald-400" : margin >= 10 ? "text-amber-400" : "text-red-400",
+            bgColor: margin >= 20 ? "bg-emerald-500/10" : margin >= 10 ? "bg-amber-500/10" : "bg-red-500/10",
+        },
     ];
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
             {cards.map((card, i) => {
                 const Icon = card.icon;
+                const trendUp   = card.trend !== undefined && card.trend > 0;
+                const trendDown = card.trend !== undefined && card.trend < 0;
                 return (
-                    <div key={i} className="rounded-xl border border-[#1e2637] bg-[#121622] p-5 shadow-sm relative overflow-hidden group">
+                    <div
+                        key={i}
+                        className="rounded-xl border border-[#1e2637] bg-[#121622] p-5 shadow-sm relative overflow-hidden group hover:border-white/10 transition-all"
+                    >
+                        {/* Background glow */}
+                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity ${card.bgColor}`} />
+
                         <div className="flex justify-between items-start mb-3 relative z-10">
                             <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{card.title}</h3>
                             <div className={`${card.bgColor} rounded-lg p-2 transition-transform group-hover:scale-110`}>
                                 <Icon size={18} className={card.color} />
                             </div>
                         </div>
-                        
+
                         <div className="relative z-10">
                             <p className="text-2xl font-bold text-white tracking-tight leading-none mb-1">{card.value}</p>
+                            {card.subValue && (
+                                <p className="text-[11px] text-slate-500 mt-1">{card.subValue}</p>
+                            )}
                         </div>
+
+                        {/* Trend badge */}
+                        {card.trendLabel && (
+                            <div className="relative z-10 mt-3 flex items-center gap-1.5">
+                                <div className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                                    trendUp   ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                                    : trendDown ? "text-red-400 bg-red-500/10 border-red-500/20"
+                                    : "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                                }`}>
+                                    {trendUp ? <TrendingUp size={10} /> : trendDown ? <TrendingDown size={10} /> : <Activity size={10} />}
+                                    {card.trendLabel}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 );
             })}

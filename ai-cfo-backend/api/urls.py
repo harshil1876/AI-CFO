@@ -16,7 +16,11 @@ from .views import (
     # New: Unified Notifications
     notifications_list, notifications_count,
     # Sprint 10: Dynamic Reporting
-    report_pnl, report_cashflow, report_balancesheet, report_export_excel
+    report_pnl, report_cashflow, report_balancesheet, report_export_excel,
+    get_team_permissions, update_team_permission,
+    # Sprint 11: Phase 2 & 3
+    update_anomaly_status, anomaly_comments,
+    audit_trail, audit_export_csv,
 )
 
 urlpatterns = [
@@ -71,5 +75,17 @@ urlpatterns = [
     path('reports/pnl/', report_pnl, name='report-pnl'),
     path('reports/cashflow/', report_cashflow, name='report-cashflow'),
     path('reports/balancesheet/', report_balancesheet, name='report-balancesheet'),
-    path('reports/export/', report_export_excel, name='report-export-excel'),
+    path('reports/export/', report_export_excel, name='report_export_excel'),
+    
+    # Sprint 11: Enterprise RBAC
+    path('team/permissions/', get_team_permissions, name='get_team_permissions'),
+    path('team/permissions/update/', update_team_permission, name='update_team_permission'),
+
+    # Sprint 11: Phase 2 — Collaborative Anomaly Workflows
+    path('anomalies/<int:anomaly_id>/status/', update_anomaly_status, name='anomaly-status-update'),
+    path('anomalies/<int:anomaly_id>/comments/', anomaly_comments, name='anomaly-comments'),
+
+    # Sprint 11: Phase 3 — Immutable Audit Trail
+    path('audit/', audit_trail, name='audit-trail'),
+    path('audit/export/', audit_export_csv, name='audit-export-csv'),
 ]

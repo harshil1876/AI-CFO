@@ -1,106 +1,190 @@
 "use client";
-import { Bell, AlertTriangle, CheckCircle, Info, ShieldAlert, XCircle, Zap } from "lucide-react";
-import Link from "next/link";
+
 import { useEffect, useState } from "react";
-import { useUser, useOrganization } from "@clerk/nextjs";
-import { getAuthHeaders } from "@/lib/api";
+import { useAuth, useOrganization, useUser } from "@clerk/nextjs";
+import {
+    Bell, AlertTriangle, CheckCircle, FileUp,
+    Info, Zap, RefreshCw, Loader2, Inbox,
+    ArrowRight, XCircle
+} from "lucide-react";
+import Link from "next/link";
 
 interface Notification {
     id: string;
     title: string;
     description: string;
     time: string;
-    type: string;
+    type: "fraud" | "warning" | "info" | "action" | "success" | "error";
 }
 
+const TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string; bg: string; border: string }> = {
+    fraud:   { icon: <AlertTriangle className="h-5 w-5" />, color: "text-red-400",     bg: "bg-red-500/10",     border: "border-red-500/20" },
+    warning: { icon: <AlertTriangle className="h-5 w-5" />, color: "text-amber-400",   bg: "bg-amber-500/10",   border: "border-amber-500/20" },
+    action:  { icon: <Zap className="h-5 w-5" />,           color: "text-purple-400",  bg: "bg-purple-500/10",  border: "border-purple-500/20" },
+    info:    { icon: <Info className="h-5 w-5" />,           color: "text-blue-400",    bg: "bg-blue-500/10",    border: "border-blue-500/20" },
+    success: { icon: <CheckCircle className="h-5 w-5" />,    color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+    error:   { icon: <XCircle className="h-5 w-5" />,        color: "text-rose-400",    bg: "bg-rose-500/10",    border: "border-rose-500/20" },
+};
+
+const formatRelative = (isoString: string) => {
+    const diff = (Date.now() - new Date(isoString).getTime()) / 1000;
+    if (diff < 60) return "just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+};
+
+// Map type to where the user should go to take action
+const TYPE_LINK: Record<string, string> = {
+    fraud:   "/dashboard/anomalies",
+    warning: "/dashboard/anomalies",
+    action:  "/dashboard/pipeline",
+    info:    "/dashboard/chat",
+    success: "/dashboard/upload",
+    error:   "/dashboard/upload",
+};
+
 export default function NotificationsPage() {
+    const { getToken, orgId } = useAuth();
     const { user } = useUser();
-    const { organization } = useOrganization();
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
+    const [filter, setFilter] = useState<string>("all");
 
-    const bot_id = organization?.id || user?.id;
+    const botId = orgId || user?.id || "default_org";
 
-    useEffect(() => {
-        if (!bot_id) return;
-
-        const fetchNotifications = async () => {
-            try {
-                const headers = await getAuthHeaders();
-                const res = await fetch(`http://localhost:8000/api/notifications/?bot_id=${bot_id}`, {
-                    headers
-                });
+    const fetchNotifications = async () => {
+        setIsLoading(true);
+        try {
+            const token = await getToken();
+            const res = await fetch(`http://127.0.0.1:8000/api/notifications/?bot_id=${botId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
                 const data = await res.json();
                 setNotifications(data);
-            } catch (err) {
-                console.error("Failed to fetch notifications", err);
-            } finally {
-                setLoading(false);
             }
-        };
-
-        fetchNotifications();
-    }, [bot_id]);
-
-    const getIcon = (type: string) => {
-        switch (type) {
-            case 'fraud': return { icon: ShieldAlert, color: "text-red-400", bg: "bg-red-500/10" };
-            case 'warning': return { icon: AlertTriangle, color: "text-amber-400", bg: "bg-amber-500/10" };
-            case 'success': return { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-500/10" };
-            case 'info': return { icon: Info, color: "text-blue-400", bg: "bg-blue-500/10" };
-            case 'action': return { icon: Zap, color: "text-indigo-400", bg: "bg-indigo-500/10" };
-            case 'error': return { icon: XCircle, color: "text-red-500", bg: "bg-red-500/10" };
-            default: return { icon: Bell, color: "text-slate-400", bg: "bg-slate-500/10" };
+        } catch (e) {
+            console.error("Failed to load notifications", e);
+        } finally {
+            setIsLoading(false);
         }
     };
 
+    useEffect(() => { if (botId) fetchNotifications(); }, [botId]);
+
+    const filters = [
+        { key: "all",     label: "All" },
+        { key: "fraud",   label: "Anomalies" },
+        { key: "warning", label: "Warnings" },
+        { key: "action",  label: "AI Advice" },
+        { key: "success", label: "Uploads" },
+    ];
+
+    const displayed = filter === "all"
+        ? notifications
+        : notifications.filter(n => n.type === filter);
+
     return (
-        <div className="flex-1 overflow-y-auto p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <header className="px-0 py-8 shrink-0">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold text-white tracking-tight">Notifications</h1>
-                        <p className="text-sm text-slate-400 mt-1">Stay updated with real-time financial intelligence and risk alerts.</p>
-                    </div>
-                    <button className="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors border border-[#1e2637] px-3 py-1.5 rounded-lg hover:bg-white/5">
-                        Mark all as read
-                    </button>
+        <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-amber-500/10 pb-6">
+                <div>
+                    <h1 className="text-3xl font-bold flex items-center gap-3 bg-clip-text text-transparent bg-gradient-to-r from-amber-200 to-amber-500">
+                        <Bell className="h-8 w-8 text-amber-500" />
+                        Notification Centre
+                    </h1>
+                    <p className="text-slate-400 mt-2">
+                        All alerts, AI insights, and upload events —{" "}
+                        <span className="text-amber-400 font-semibold">{notifications.length}</span> events
+                    </p>
                 </div>
-            </header>
+                <button
+                    onClick={fetchNotifications}
+                    className="p-2 bg-white/5 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                    title="Refresh"
+                >
+                    <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                </button>
+            </div>
 
-            <div className="grid gap-4">
-                {notifications.length === 0 && !loading && (
-                    <div className="py-20 text-center border border-dashed border-[#1e2637] rounded-xl">
-                        <p className="text-slate-500">No new notifications found.</p>
-                    </div>
-                )}
-                
-                {notifications.map((n) => {
-                    const { icon: Icon, color, bg } = getIcon(n.type);
-                    return (
-                        <div key={n.id} className="group flex items-start gap-5 p-5 bg-[#121622] border border-[#1e2637] rounded-xl hover:border-white/10 transition-all cursor-pointer">
-                            <div className={`${bg} p-3 rounded-xl transition-transform group-hover:scale-105`}>
-                                <Icon size={22} className={color} />
-                            </div>
-                            <div className="flex-1 space-y-1">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-bold text-white group-hover:text-amber-100 transition-colors">{n.title}</h3>
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                                        {new Date(n.time).toLocaleDateString()} {new Date(n.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
+            {/* Filter Pills */}
+            <div className="flex items-center gap-2 flex-wrap">
+                {filters.map(f => (
+                    <button
+                        key={f.key}
+                        onClick={() => setFilter(f.key)}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                            filter === f.key
+                                ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
+                                : "bg-white/5 border-white/10 text-slate-400 hover:text-white hover:border-white/20"
+                        }`}
+                    >
+                        {f.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* Notification Feed */}
+            {isLoading ? (
+                <div className="flex justify-center items-center h-48 text-slate-400">
+                    <Loader2 className="h-7 w-7 animate-spin text-amber-500 mr-3" />
+                    Loading events...
+                </div>
+            ) : displayed.length === 0 ? (
+                <div className="text-center py-24">
+                    <Inbox className="h-16 w-16 text-slate-700 mx-auto mb-4" />
+                    <p className="text-slate-500 font-semibold text-lg">No notifications</p>
+                    <p className="text-slate-600 text-sm mt-1">
+                        Run your Intelligence Pipeline to start generating alerts.
+                    </p>
+                    <Link
+                        href="/dashboard/pipeline"
+                        className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-xl text-sm font-semibold hover:bg-amber-500/20 transition-all"
+                    >
+                        <Zap className="h-4 w-4" /> Run Pipeline
+                    </Link>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    {displayed.map((notif) => {
+                        const cfg = TYPE_CONFIG[notif.type] || TYPE_CONFIG.info;
+                        const link = TYPE_LINK[notif.type] || "/dashboard";
+                        return (
+                            <Link
+                                key={notif.id}
+                                href={link}
+                                className={`block rounded-xl border p-5 transition-all hover:scale-[1.005] hover:shadow-xl group ${cfg.bg} ${cfg.border}`}
+                            >
+                                <div className="flex items-start gap-4">
+                                    {/* Icon */}
+                                    <div className={`mt-0.5 shrink-0 ${cfg.color}`}>
+                                        {cfg.icon}
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2 mb-1">
+                                            <p className={`font-semibold text-sm ${cfg.color}`}>
+                                                {notif.title}
+                                            </p>
+                                            <span className="text-slate-500 text-xs shrink-0">
+                                                {formatRelative(notif.time)}
+                                            </span>
+                                        </div>
+                                        <p className="text-slate-400 text-sm leading-relaxed line-clamp-2">
+                                            {notif.description}
+                                        </p>
+                                    </div>
+
+                                    {/* Action arrow */}
+                                    <ArrowRight className="h-4 w-4 text-slate-600 group-hover:text-slate-400 transition-colors shrink-0 mt-1" />
                                 </div>
-                                <p className="text-sm text-slate-400 leading-relaxed max-w-2xl">{n.description}</p>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-
-            <div className="pt-8 border-t border-[#1e2637] flex justify-center">
-                <Link href="/dashboard" className="text-sm font-bold text-slate-500 hover:text-white transition-colors flex items-center gap-2">
-                    Back to Overview
-                </Link>
-            </div>
+                            </Link>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }

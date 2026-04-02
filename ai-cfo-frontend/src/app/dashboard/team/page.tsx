@@ -101,9 +101,14 @@ export default function TeamPermissionsPage() {
 
   if (!organization) {
     return (
-      <div className="flex h-96 items-center justify-center text-slate-400">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500 mr-2" />
-        <p>Loading Organization Data...</p>
+      <div className="max-w-7xl mx-auto p-8 text-center mt-20">
+        <ShieldAlert className="h-20 w-20 text-amber-500 mx-auto mb-6 opacity-80" />
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-200 to-amber-500 mb-4">
+          Organization Required
+        </h1>
+        <p className="text-slate-400 max-w-xl mx-auto">
+          Team permissions are an enterprise feature. Please select or create an organization using the switcher in the top right to manage roles.
+        </p>
       </div>
     );
   }

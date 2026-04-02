@@ -7,6 +7,7 @@ import {
   Loader2, FileText, AlertTriangle, Upload, BarChart,
   Settings, CheckCircle, RefreshCw, ShieldAlert, Activity
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface AuditEvent {
   id: number;
@@ -33,7 +34,8 @@ const getActionStyle = (action: string) =>
 
 const formatTimestamp = (ts: string) => {
   const d = new Date(ts);
-  return d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+  const userLocale = Intl.DateTimeFormat().resolvedOptions().locale;
+  return d.toLocaleString(userLocale, { dateStyle: "medium", timeStyle: "short" });
 };
 
 export default function AuditTrailPage() {
@@ -99,8 +101,9 @@ export default function AuditTrailPage() {
       a.download = `audit_trail_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
+      toast.success("Audit log exported successfully!");
     } catch (e) {
-      alert("Export failed. Please try again.");
+      toast.error("Export failed. Please try again.");
     } finally {
       setIsExporting(false);
     }

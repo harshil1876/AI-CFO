@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { getKPIs, type KPI } from "@/lib/api";
 import { useCurrency } from "@/context/CurrencyContext";
-import { TrendingUp, TrendingDown, Wallet, CreditCard, Target, AlertTriangle, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, CreditCard, Target, AlertTriangle, Activity, X } from "lucide-react";
 
 interface MetricCard {
     title: string;
@@ -17,6 +18,7 @@ interface MetricCard {
 export default function MetricsGrid({ botId }: { botId: string }) {
     const [stats, setStats] = useState<KPI | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [showWelcome, setShowWelcome] = useState(true);
     const { formatAmount } = useCurrency();
 
     useEffect(() => {
@@ -39,8 +41,39 @@ export default function MetricsGrid({ botId }: { botId: string }) {
     }
 
     if (!stats) {
+        if (showWelcome) {
+            return (
+                <div className="w-full rounded-xl border border-[#1e2637] bg-gradient-to-br from-[#121622] to-[#0a0d14] p-8 shadow-2xl relative overflow-hidden flex flex-col items-center justify-center text-center min-h-[200px] animate-in fade-in zoom-in-95 duration-500">
+                    <button 
+                        onClick={() => setShowWelcome(false)}
+                        className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors z-20"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                    {/* Background radial glow */}
+                    <div className="absolute inset-0 bg-blue-500/5 filter blur-[100px] rounded-full transform -translate-y-1/2" />
+                    
+                    <div className="bg-blue-500/10 p-4 rounded-2xl mb-4 border border-blue-500/20 relative z-10">
+                        <Activity className="w-8 h-8 text-blue-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2 relative z-10">Welcome to Your AI CFO</h3>
+                    <p className="text-sm text-slate-400 max-w-md relative z-10 mb-6">
+                        Your financial dashboard is ready. Connect your bank, accounting software, or upload your first dataset to generate live KPI insights.
+                    </p>
+                    <div className="flex gap-4 relative z-10">
+                        <Link href="/dashboard/connectors" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg shadow-lg shadow-blue-500/20 transition-all border border-blue-400/50">
+                            Connect Data Source
+                        </Link>
+                        <Link href="/dashboard/upload" className="px-5 py-2.5 bg-[#1e2637] hover:bg-[#252f43] text-white text-sm font-semibold rounded-lg transition-all border border-white/5">
+                            Upload CSV / Excel
+                        </Link>
+                    </div>
+                </div>
+            );
+        }
+
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full animate-in fade-in duration-500">
                 {[
                     { title: "Total Revenue", value: "— Upload data", icon: TrendingUp, color: "text-emerald-400", bgColor: "bg-emerald-500/10" },
                     { title: "Total Expenses", value: "— Run pipeline", icon: Wallet, color: "text-amber-400", bgColor: "bg-amber-500/10" },

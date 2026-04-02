@@ -799,8 +799,44 @@ def report_export_excel(request):
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename=financial_report_{report_type}_{bot_id}.xlsx'
-    df.to_excel(response, index=False, engine='openpyxl')
     
+    with pd.ExcelWriter(response, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Report')
+        workbook = writer.book
+        worksheet = writer.sheets['Report']
+
+        # Format Headers
+        from openpyxl.styles import Font, PatternFill
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill("solid", fgColor="1E2637")
+        for cell in worksheet[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+
+        # Freeze top row
+        worksheet.freeze_panes = "A2"
+
+        # Apply Currency formatting to amount columns
+        for row in range(2, len(df) + 2):
+            for col in range(1, len(df.columns) + 1):
+                col_letter = worksheet.cell(row=1, column=col).column_letter
+                header_name = worksheet.cell(row=1, column=col).value
+                if header_name in ['Amount', 'Inflows', 'Outflows', 'Net']:
+                    worksheet[f"{col_letter}{row}"].number_format = '"$"#,##0.00'
+
+        # Auto-adjust column widths
+        for col in worksheet.columns:
+            max_length = 0
+            column = col[0].column_letter 
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            worksheet.column_dimensions[column].width = adjusted_width
+
     return response
 
 # =====================================================

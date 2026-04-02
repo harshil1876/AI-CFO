@@ -35,6 +35,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [notificationCount, setNotificationCount] = useState(0);
+    const [customRole, setCustomRole] = useState("Corporate Treasury");
 
     const botId = organization?.id || "org_default";
 
@@ -58,9 +59,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         if (isUserLoaded) {
             fetchNotificationCount();
             const interval = setInterval(fetchNotificationCount, 30000); // Check every 30s
+            
+            // Load custom role
+            const savedRole = localStorage.getItem("cfolytics_custom_role");
+            if (savedRole) setCustomRole(savedRole);
+
             return () => clearInterval(interval);
         }
     }, [isUserLoaded, botId]);
+
+    const handleEditRole = () => {
+        const newRole = window.prompt("Enter your designation:", customRole);
+        if (newRole && newRole.trim() !== "") {
+            setCustomRole(newRole.trim());
+            localStorage.setItem("cfolytics_custom_role", newRole.trim());
+        }
+    };
 
     // Resync when viewing notifications page
     useEffect(() => {
@@ -227,7 +241,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         <div className="flex items-center gap-3">
                             <div className="hidden lg:flex flex-col items-end leading-tight">
                                 <span className="text-sm font-semibold text-white">{user?.fullName || "A. Chen (CFO)"}</span>
-                                <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">{organization?.name || "Corporate Treasury"}</span>
+                                <span 
+                                    onClick={handleEditRole}
+                                    className="text-[10px] text-slate-500 font-medium uppercase tracking-wider cursor-pointer hover:text-amber-400 transition-colors"
+                                    title="Click to edit designation"
+                                >
+                                    {organization?.name || customRole}
+                                </span>
                             </div>
                             <UserButton appearance={{ elements: { avatarBox: "h-9 w-9" } }} />
                         </div>

@@ -21,6 +21,7 @@ from .views import (
     # Sprint 11: Phase 2 & 3
     update_anomaly_status, anomaly_comments,
     audit_trail, audit_export_csv,
+    daily_briefing,
 )
 
 urlpatterns = [
@@ -70,6 +71,7 @@ urlpatterns = [
     # New: Unified Notifications
     path('notifications/', notifications_list, name='notifications-list'),
     path('notifications/count/', notifications_count, name='notifications-count'),
+    path('briefing/', daily_briefing, name='daily-briefing'),
 
     # Sprint 10: Dynamic Reporting
     path('reports/pnl/', report_pnl, name='report-pnl'),

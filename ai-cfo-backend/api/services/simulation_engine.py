@@ -133,3 +133,52 @@ def run_simulation(bot_id: str, period: str, scenarios: list) -> dict:
         "risk_message": risk_message,
         "scenarios_applied": applied_scenarios,
     }
+
+def simulate_from_nlp(bot_id: str, period: str, prompt: str) -> dict:
+    """
+    Translates a natural language prompt into a structured simulation scenario array using LLM,
+    then runs the simulation.
+    """
+    import os
+    import json
+    
+    try:
+        from google import genai
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            return {"error": "API Key missing for NLP simulation"}
+            
+        client = genai.Client(api_key=api_key)
+        
+        system_instructions = '''
+        You are a financial modeler. The user will provide a hypothetical scenario in natural language.
+        You must deduce the intended simulation scenarios and output a JSON array of objects.
+        Valid keys for objects:
+        - type: strictly one of "adjust_revenue", "adjust_expense", "adjust_department"
+        - value: a numeric percentage (e.g., 20 for +20%, -15 for -15%)
+        - target: purely optional, only used if type is "adjust_department", string representing department name.
+        
+        Example Input: "What if we cut marketing spend by 10% and boost revenue by 5%?"
+        Example Output: [{"type": "adjust_department", "target": "marketing", "value": -10}, {"type": "adjust_revenue", "value": 5}]
+        '''
+        
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=system_instructions + "\\n\\nThe User's prompt: " + prompt,
+        )
+        
+        response_text = response.text
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+            
+        scenarios = json.loads(response_text)
+        if not isinstance(scenarios, list):
+            scenarios = [scenarios]
+            
+        return run_simulation(bot_id, period, scenarios)
+        
+    except Exception as e:
+        logger.error(f"Error in NLP simulation translation: {e}")
+        return {"error": "Failed to translate standard prompt into simulation."}

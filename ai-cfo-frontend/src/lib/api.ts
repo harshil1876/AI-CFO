@@ -91,13 +91,14 @@ export interface UploadedFile {
 export async function sendMessage(
   botId: string,
   message: string,
-  history: { role: string; content: string }[] = []
+  history: { role: string; content: string }[] = [],
+  agentId: string = "strategist"
 ): Promise<ChatResponse> {
   const auth = await getAuthHeaders();
   const res = await fetch(`${API_URL}/chat/${botId}/`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...auth },
-    body: JSON.stringify({ message, history }),
+    body: JSON.stringify({ message, history, agent_id: agentId }),
   });
   return res.json();
 }

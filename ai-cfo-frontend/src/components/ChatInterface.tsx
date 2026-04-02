@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { sendMessage, type ChatResponse } from "@/lib/api";
+import { AGENT_PERSONAS, DEFAULT_AGENT_ID } from "@/config/agents.config";
+import { Sparkles, ArrowRight } from "lucide-react";
 
 interface Message {
     role: "user" | "assistant";
@@ -15,23 +17,35 @@ interface ChatInterfaceProps {
 }
 
 export default function ChatInterface({ botId }: ChatInterfaceProps) {
+    const [selectedAgentId, setSelectedAgentId] = useState(DEFAULT_AGENT_ID);
+    const activeAgent = AGENT_PERSONAS[selectedAgentId];
+
     const [messages, setMessages] = useState<Message[]>([
         {
             role: "assistant",
-            content:
-                "Hello! I'm your AI CFO. I can analyze your financial data, provide forecasts, detect anomalies, and give you actionable recommendations. How can I help you today?",
+            content: `Hello! I'm ${activeAgent.name}. ${activeAgent.description} How can I assist you today?`,
             timestamp: new Date(),
-            suggestedQuestions: [
-                "What are my current KPIs?",
-                "Show me revenue forecast",
-                "Any anomalies detected?",
-                "Give me financial recommendations",
-            ],
+            suggestedQuestions: activeAgent.quickQuestions,
         },
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Reset chat when switching agents
+    const handleSwitchAgent = (agentId: string) => {
+        if (isLoading) return;
+        const newAgent = AGENT_PERSONAS[agentId];
+        setSelectedAgentId(agentId);
+        setMessages([
+            {
+                role: "assistant",
+                content: `Hello! I'm ${newAgent.name}. ${newAgent.description} How can I assist you today?`,
+                timestamp: new Date(),
+                suggestedQuestions: newAgent.quickQuestions,
+            },
+        ]);
+    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -60,7 +74,7 @@ export default function ChatInterface({ botId }: ChatInterfaceProps) {
                 content: m.content,
             }));
 
-            const response: ChatResponse = await sendMessage(botId, text, history);
+            const response: ChatResponse = await sendMessage(botId, text, history, selectedAgentId);
 
             const assistantMessage: Message = {
                 role: "assistant",
@@ -91,20 +105,56 @@ export default function ChatInterface({ botId }: ChatInterfaceProps) {
     };
 
     return (
-        <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-gradient-to-b from-[#0a0f1a] to-[#0d1525] shadow-2xl">
-            {/* Header */}
-            <div className="flex items-center gap-3 rounded-t-2xl border-b border-white/10 bg-gradient-to-r from-blue-600/20 to-purple-600/20 px-6 py-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-lg font-bold text-white shadow-lg shadow-blue-500/25">
-                    ₹
+        <div className="flex h-full gap-4">
+            {/* Agent Sidebar */}
+            <div className="w-64 shrink-0 flex flex-col gap-3">
+                <div className="px-2 pb-2">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <Sparkles size={14} className="text-amber-500" />
+                        Specialists
+                    </h3>
                 </div>
-                <div>
-                    <h2 className="text-lg font-semibold text-white">AI CFO</h2>
-                    <p className="text-xs text-blue-300/70">
-                        Financial Intelligence • Always Online
-                    </p>
-                </div>
-                <div className="ml-auto flex h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-400/50" />
+                {Object.values(AGENT_PERSONAS).map((agent) => {
+                    const isActive = selectedAgentId === agent.id;
+                    const Icon = agent.icon;
+                    return (
+                        <button
+                            key={agent.id}
+                            onClick={() => handleSwitchAgent(agent.id)}
+                            className={`flex flex-col text-left p-3 rounded-xl border transition-all ${
+                                isActive 
+                                    ? `bg-[#121622] border-white/20 shadow-lg` 
+                                    : `bg-transparent border-transparent hover:bg-white/5`
+                            }`}
+                        >
+                            <div className="flex items-center gap-3 mb-1">
+                                <div className={`p-1.5 rounded-lg ${isActive ? agent.bgColor : 'bg-white/5'} ${isActive ? agent.color : 'text-slate-500'}`}>
+                                    <Icon size={16} />
+                                </div>
+                                <span className={`font-semibold text-sm ${isActive ? 'text-white' : 'text-slate-400'}`}>
+                                    {agent.name}
+                                </span>
+                            </div>
+                            <span className="text-[10px] text-slate-500 font-medium ml-[34px]">{agent.role}</span>
+                        </button>
+                    )
+                })}
             </div>
+
+            {/* Chat Area */}
+            <div className="flex-1 flex flex-col rounded-2xl border border-white/10 bg-gradient-to-b from-[#0a0f1a] to-[#0d1525] shadow-2xl relative overflow-hidden">
+                {/* Header */}
+                <div className={`flex items-center gap-3 border-b border-white/10 bg-[#121622]/80 backdrop-blur-md px-6 py-4`}>
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-full ${activeAgent.bgColor} ${activeAgent.color}`}>
+                        <activeAgent.icon size={20} />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-semibold text-white">{activeAgent.name}</h2>
+                        <p className={`text-xs ${activeAgent.color} opacity-80 font-medium`}>
+                            {activeAgent.role}
+                        </p>
+                    </div>
+                </div>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-thin">
@@ -200,6 +250,7 @@ export default function ChatInterface({ botId }: ChatInterfaceProps) {
                         </svg>
                     </button>
                 </div>
+            </div>
             </div>
         </div>
     );

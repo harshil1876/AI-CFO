@@ -226,6 +226,7 @@ def chat(request, bot_id):
     """
     message = request.data.get("message")
     chat_history = request.data.get("history", [])
+    agent_id = request.data.get("agent_id", "strategist")
 
     if not message:
         return Response(
@@ -233,7 +234,7 @@ def chat(request, bot_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    result = chat_with_cfo(bot_id, message, chat_history)
+    result = chat_with_cfo(bot_id, message, chat_history, agent_id)
 
     return Response(result)
 
@@ -1043,3 +1044,18 @@ def audit_export_csv(request):
             e.resource_type, e.resource_id, e.details, e.ip_address or '',
         ])
     return response
+
+from .services.proactive_engine import generate_morning_brief
+
+@api_view(['GET'])
+def daily_briefing(request):
+    """
+    GET /api/briefing/?bot_id=123
+    Returns the daily AI-generated executive briefing.
+    """
+    bot_id = request.query_params.get('bot_id')
+    if not bot_id:
+        return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    brief = generate_morning_brief(bot_id)
+    return Response(brief)

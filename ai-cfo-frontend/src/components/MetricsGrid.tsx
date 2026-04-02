@@ -17,6 +17,7 @@ interface MetricCard {
 export default function MetricsGrid({ botId }: { botId: string }) {
     const [stats, setStats] = useState<KPI | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const { formatAmount } = useCurrency();
 
     useEffect(() => {
         setIsLoading(true);
@@ -67,8 +68,6 @@ export default function MetricsGrid({ botId }: { botId: string }) {
         ? Number(stats.profit_margin)
         : (rev > 0 ? (profit / rev) * 100 : 0);
     const anomalies = Number((stats as any).anomaly_count || 0);
-
-    const { formatAmount } = useCurrency();
 
     const cards: MetricCard[] = [
         {

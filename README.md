@@ -4,27 +4,28 @@ Welcome to the **Enterprise AI CFO Platform**! This is a state-of-the-art AI Dec
 
 This repository integrates an **AI CFO Core Engine**, a **Financial Advisor Simulation**, and a **Conversational Chat Infrastructure** (based on Quickbots architecture) into a unified enterprise SaaS solution.
 
-## 🚀 Key Features
-1. **Multi-Tenant SaaS Architecture:** Each company has isolated financial data and its own unique Chatbot Instance (powered by Clerk B2B Orgs and Supabase RLS).
-2. **Financial Intelligence Engine:** Ingests raw transactions and computes Descriptive KPIs, Predictive Forecasts (via Prophet), and Risk Detection (via Isolation Forest).
-3. **Conversational AI Layer (RAG):** Uses Upstash Vector to sync financial KPI summaries, so the LLM chatbot can answer questions like *"Why is our profit declining?"* using real data context.
-4. **Advisory Simulation Pipeline:** Allows users to run hypothetical scenarios and see the projected financial impact immediately.
-5. **Automation:** Triggers webhooks for critical financial anomalies (e.g. via n8n to Slack/Email).
+## 🚀 Key Features (Sprints 1-14)
+1. **Supabase-Tier Multi-Tenant Workspaces:** A highly robust top-level `Organization` model paired with an isolated multi-`Workspace` engine, strictly separating ledgers, integrations, and permission hierarchies.
+2. **Hybrid Multi-Agent Ecosystem:** Four explicit AI Personas (The Auditor, The Strategist, The Analyst, The Guardian) built on Gemini Vision/Pro, automatically adapting the RAG context and interaction style to the financial task.
+3. **Financial Intelligence & Analytics Engine:** Automatically ingests raw CSV, Excel, or PDF invoices and computes Descriptive KPIs, Prophet-based Revenue Forecasting, and Isolation Forest Fraud Detection.
+4. **Interactive BI Dashboards:** Power BI-inspired reporting capabilities using `Recharts`, complete with "Drill-Down" transaction rendering, Target KPI radial trackers, and dynamic globally-adaptive currency/timezone states.
+5. **Invisible AP Automation & Webhooks:** Utilizes Gemini Vision to automatically pull line-items from invoice PDFs, logging anomalies to an Immutable Audit Trail and alerting stakeholders via background webhooks.
 
 ## 📁 Repository Structure
 This project is conceptually divided into two major layers:
 
-*   **/ai-cfo-frontend:** The Next.js React application.
-    *   *Features:* Chatbot Interface, Multi-Tenant Authentication (Clerk), and Dashboard elements written using Tailwind + Shadcn UI.
+*   **/ai-cfo-frontend:** The Next.js 14 React App Router architecture.
+    *   *Features:* Supabase-inspired 3-State Sidebar Layout, Hybrid Chatbot Interface, B2B Authentication (Clerk), and Advanced Financial Charting.
 *   **/ai-cfo-backend:** The Django REST API and Machine Learning service.
-    *   *Features:* Transaction models, ML calculation workers, RAG orchestration endpoints, and database connection logic targeting Supabase PostgreSQL.
+    *   *Features:* Pandas ETL parsing, P&L/Cash Flow algorithmic generation, ML anomaly detection workers, and Python RAG orchestration linked to Upstash Vector.
 
 ## 🛠️ Quick Start
 
 **Prerequisites:** You will need API keys from:
-*   [Clerk.com](https://clerk.com/) (Enable Organizations)
-*   [Supabase.com](https://supabase.com/) (PostgreSQL Database)
-*   [Upstash.com](https://upstash.com/) (Vector Search & Redis)
+*   [Clerk.com](https://clerk.com/) (Enable B2B Organizations)
+*   [Supabase.com](https://supabase.com/) (PostgreSQL Relational DB)
+*   [Upstash.com](https://upstash.com/) (Vector Search Database)
+*   [Google AI Studio](https://aistudio.google.com/) (Gemini LLM / Vision)
 
 **Frontend Setup:**
 1. `cd ai-cfo-frontend`
@@ -36,14 +37,14 @@ This project is conceptually divided into two major layers:
 1. `cd ai-cfo-backend`
 2. Configure `.env`
 3. `python -m venv venv` and activate it
-4. `pip install -r requirements.txt` *(to be generated)*
+4. `pip install -r requirements.txt`
 5. `python manage.py migrate`
 6. `python manage.py runserver`
 
-## 🏗️ Agile Methodology
-This project is built iteratively using Agile Sprints. You can find detailed breakdowns of the Epics and User stories in `agile_user_stories.md`.
+## 🏗️ Agile Methodology & Sprints
+This project is built iteratively using Agile Sprints. You can find detailed breakdowns of Epics and User stories in `agile_user_stories.md`.
 
-*Current Status: Sprints 1 through 5 (Foundation, Chat, AI Engine, Clerk Auth) are **completed**. Preparing for Sprint 6: Data Integration Layer.*
+*Current Status: The Core Financial ML Engine, Multi-Agent Chatbot, and Enterprise RBAC layers (Sprints 1 through 13) are **completed**. The application is currently entering the critical architecture refactor phase (Sprint 14): Supabase UX Layout & Workspace Intelligence Isolation.*
 
 ## ☁️ Deployment
-The frontend is optimized for **Vercel** and the backend is configured for **Microsoft Azure** (App Services & Key Vault).
+The Next.js frontend is optimized for **Vercel** via Server Actions, while the Django container backend operates flawlessly scaled across **Microsoft Azure** (App Services & Key Vault).

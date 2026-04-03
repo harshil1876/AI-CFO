@@ -1,265 +1,340 @@
 "use client";
-import { useState, ReactNode, useEffect } from "react";
+import { useState, ReactNode, useEffect, useRef } from "react";
 import { useUser, useOrganization, UserButton, SignOutButton, OrganizationSwitcher } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, MessageSquare, BarChart3, Receipt, 
-  UploadCloud, Zap, FlaskConical, Link2, 
-  ChevronLeft, ChevronRight, Bell, Search, 
-  LogOut, Settings, BarChart, Shield, AlertTriangle, History 
+import {
+  LayoutDashboard, MessageSquare, BarChart3, Receipt,
+  UploadCloud, Zap, FlaskConical, Link2,
+  Bell, Search, LogOut, Shield, AlertTriangle,
+  History, BarChart, ChevronDown, Settings, Users,
+  PanelLeft, PanelLeftClose, BrainCircuit
 } from "lucide-react";
 import { getAuthHeaders } from "@/lib/api";
 import { CurrencyProvider, useCurrency } from "@/context/CurrencyContext";
+import { CustomDialog, DialogButton } from "@/components/CustomDialog";
 
+// ─── Currency Switcher ──────────────────────────────────────────────────────
 function CurrencySwitcher() {
-    const { currency, setCurrency } = useCurrency();
-    return (
-        <select 
-            value={currency} 
-            onChange={(e) => setCurrency(e.target.value as any)}
-            className="bg-[#121622] border border-[#1e2637] rounded-lg px-2 py-1 text-xs font-semibold text-slate-300 hover:text-white transition-all outline-none focus:ring-1 focus:ring-amber-500/50"
-        >
-            <option value="USD">USD ($)</option>
-            <option value="INR">INR (₹)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="GBP">GBP (£)</option>
-        </select>
-    );
+  const { currency, setCurrency } = useCurrency();
+  return (
+    <select
+      value={currency}
+      onChange={(e) => setCurrency(e.target.value as any)}
+      className="bg-transparent border border-[#2a3448] rounded-md px-2 py-1 text-xs font-medium text-slate-400 hover:text-white hover:border-white/20 transition-all outline-none cursor-pointer"
+    >
+      <option value="USD">USD ($)</option>
+      <option value="INR">INR (₹)</option>
+      <option value="EUR">EUR (€)</option>
+      <option value="GBP">GBP (£)</option>
+    </select>
+  );
 }
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
-    const { user, isLoaded: isUserLoaded } = useUser();
-    const { organization } = useOrganization();
-    const pathname = usePathname();
+// ─── Nav Groups ─────────────────────────────────────────────────────────────
+const NAV_GROUPS = [
+  {
+    label: "CORE",
+    items: [
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
+      { href: "/dashboard/reports", label: "Financial Reports", icon: BarChart },
+      { href: "/dashboard/budget", label: "Budgeting", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "AI & AUTOMATION",
+    items: [
+      { href: "/dashboard/chat", label: "AI CFO Chat", icon: BrainCircuit },
+      { href: "/dashboard/pipeline", label: "Intelligence", icon: Zap },
+      { href: "/dashboard/simulation", label: "Scenarios", icon: FlaskConical },
+      { href: "/dashboard/ap", label: "Accounts Payable", icon: Receipt },
+    ],
+  },
+  {
+    label: "DATA",
+    items: [
+      { href: "/dashboard/upload", label: "Upload Data", icon: UploadCloud },
+      { href: "/dashboard/connectors", label: "Connectors", icon: Link2 },
+      { href: "/dashboard/anomalies", label: "Anomaly Hub", icon: AlertTriangle },
+    ],
+  },
+  {
+    label: "GOVERNANCE",
+    items: [
+      { href: "/dashboard/audit", label: "Audit Trail", icon: History },
+      { href: "/dashboard/team", label: "Team Permissions", icon: Shield },
+    ],
+  },
+];
 
-    const [isCollapsed, setIsCollapsed] = useState(false);
-    const [notificationCount, setNotificationCount] = useState(0);
-    const [customRole, setCustomRole] = useState("Corporate Treasury");
+// ─── Sidebar Mode Type ───────────────────────────────────────────────────────
+type SidebarMode = "expanded" | "collapsed" | "hover";
 
-    const botId = organization?.id || "org_default";
+// ─── Sidebar ────────────────────────────────────────────────────────────────
+function Sidebar({ mode, setMode }: { mode: SidebarMode; setMode: (m: SidebarMode) => void }) {
+  const pathname = usePathname();
+  const [hovered, setHovered] = useState(false);
 
-    const fetchNotificationCount = async () => {
-        try {
-            const headers = await getAuthHeaders();
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/count/?bot_id=${botId}`, {
-                headers
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setNotificationCount(data.count);
-            }
-        } catch (error) {
-            console.error("Failed to fetch notification count", error);
-        }
-    };
+  const isExpanded = mode === "expanded" || (mode === "hover" && hovered);
+  const sidebarWidth = mode === "collapsed" || (mode === "hover" && !hovered) ? "w-[52px]" : "w-56";
 
-    // Initial fetch and poll
-    useEffect(() => {
-        if (isUserLoaded) {
-            fetchNotificationCount();
-            const interval = setInterval(fetchNotificationCount, 30000); // Check every 30s
-            
-            // Load custom role
-            const savedRole = localStorage.getItem("cfolytics_custom_role");
-            if (savedRole) setCustomRole(savedRole);
+  const isActive = (href: string, exact?: boolean) =>
+    exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
 
-            return () => clearInterval(interval);
-        }
-    }, [isUserLoaded, botId]);
-
-    const handleEditRole = () => {
-        const newRole = window.prompt("Enter your designation:", customRole);
-        if (newRole && newRole.trim() !== "") {
-            setCustomRole(newRole.trim());
-            localStorage.setItem("cfolytics_custom_role", newRole.trim());
-        }
-    };
-
-    // Resync when viewing notifications page
-    useEffect(() => {
-        if (pathname === "/dashboard/notifications") {
-            setNotificationCount(0);
-        }
-    }, [pathname]);
-
-    // Persist sidebar state
-    useEffect(() => {
-        const stored = localStorage.getItem("sidebar-collapsed");
-        if (stored !== null) setIsCollapsed(stored === "true");
-    }, []);
-
-    const toggleSidebar = () => {
-        const newState = !isCollapsed;
-        setIsCollapsed(newState);
-        localStorage.setItem("sidebar-collapsed", String(newState));
-    };
-
-    const tabs = [
-        { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-        { href: "/dashboard/chat", label: "AI CFO Chat", icon: MessageSquare },
-        { href: "/dashboard/reports", label: "Financial Reports", icon: BarChart },
-        { href: "/dashboard/budget", label: "Budgeting", icon: BarChart3 },
-        { href: "/dashboard/ap", label: "Accounts Payable", icon: Receipt },
-        { href: "/dashboard/upload", label: "Upload Data", icon: UploadCloud },
-        { href: "/dashboard/pipeline", label: "Intelligence", icon: Zap },
-        { href: "/dashboard/simulation", label: "Scenarios", icon: FlaskConical },
-        { href: "/dashboard/connectors", label: "Connectors", icon: Link2 },
-        { href: "/dashboard/anomalies", label: "Anomaly Hub", icon: AlertTriangle },
-        { href: "/dashboard/audit", label: "Audit Trail", icon: History },
-        { href: "/dashboard/team", label: "Team Permissions", icon: Shield },
-    ];
-
-    // Show loading while Clerk loads
-    if (!isUserLoaded) {
-        return (
-            <div className="flex h-screen items-center justify-center bg-[#050814] text-white">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
-                    <p className="text-sm text-gray-500">Loading your executive workspace...</p>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <CurrencyProvider>
-            <div className="flex h-screen bg-[#0c0f17] text-white">
-            {/* Sidebar */}
-            <aside 
-                className={`flex flex-col transition-all duration-300 border-r border-[#1e2637] bg-[#121622] ${
-                    isCollapsed ? "w-20" : "w-64"
-                }`}
-            >
-                {/* Sidebar Header: Branding (Only show if not collapsed?) actually STRATOS has symbol? */}
-                {/* Actually STRATOS sidebar has "Dashboard, Financials..." etc. */}
-                
-                <div className="flex flex-col flex-1 mt-6">
-                    {/* Collapse Toggle at Top */}
-                    <div className="px-4 mb-4 flex justify-start">
-                        <button 
-                            onClick={toggleSidebar}
-                            className={`flex items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white transition-all group ${isCollapsed ? 'w-full' : 'w-10'}`}
-                        >
-                            {isCollapsed ? <ChevronRight size={20} className="group-hover:text-white" /> : <ChevronLeft size={20} className="group-hover:text-white" />}
-                        </button>
-                    </div>
-
-                    <nav className="flex-1 px-4 space-y-1">
-                        {tabs.map((tab) => {
-                            const isActive = pathname === tab.href;
-                            const Icon = tab.icon;
-                            return (
-                                <Link
-                                    key={tab.href}
-                                    href={tab.href}
-                                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all group ${
-                                        isActive
-                                            ? "bg-white/10 text-white font-semibold"
-                                            : "text-slate-400 hover:bg-white/5 hover:text-white"
-                                    }`}
-                                >
-                                    <Icon size={20} className={isActive ? "text-white" : "text-slate-400 group-hover:text-white"} />
-                                    {!isCollapsed && <span>{tab.label}</span>}
-                                </Link>
-                            );
-                        })}
-                    </nav>
-
-                    {/* Sidebar Footer */}
-                    <div className="px-4 py-4 border-t border-[#1e2637] space-y-2">
-                        <SignOutButton redirectUrl="/">
-                            <button className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all">
-                                <LogOut size={20} />
-                                {!isCollapsed && <span className="text-sm">Log Out</span>}
-                            </button>
-                        </SignOutButton>
-                    </div>
-                </div>
-            </aside>
-
-            {/* Main Content Area */}
-            <main className="flex flex-1 flex-col overflow-hidden relative">
-                
-                {/* Top Navbar */}
-                <header className="flex h-[72px] shrink-0 items-center justify-between border-b border-[#1e2637] bg-[#0c0f17]/80 backdrop-blur-md px-8 z-20">
-                    
-                    {/* Left: CFOlytics Logo & Title */}
-                    <div className="flex items-center gap-4">
-                        <img 
-                            src="/Logo.png" 
-                            alt="CFOlytics Logo" 
-                            className="h-10 w-auto object-contain"
-                        />
-                        <div className="flex items-baseline gap-2">
-                            <h1 className="text-lg font-bold text-white tracking-tight">CFOlytics</h1>
-                            <span className="text-sm text-slate-400 border-l border-[#1e2637] pl-3 hidden sm:block">AI CFO Platform</span>
-                        </div>
-                    </div>
-
-                    {/* Center: Search Box */}
-                    <div className="flex-1 max-w-xl mx-auto px-6 hidden md:block">
-                        <div className="relative group">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-white transition-colors" size={18} />
-                            <input 
-                                type="text"
-                                placeholder="Search dashboards, transactions, or ask AI..."
-                                className="w-full bg-[#1e2637]/50 border border-[#1e2637] rounded-full py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-white/20 focus:bg-[#1e2637] transition-all"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Right: Actions */}
-                    <div className="flex items-center gap-6">
-                        {/* Workspace Switcher */}
-                        <div className="hidden sm:block">
-                            <OrganizationSwitcher 
-                                hidePersonal 
-                                appearance={{
-                                    elements: {
-                                        organizationSwitcherTrigger: "flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#1e2637] bg-[#121622] text-slate-400 hover:text-white transition-all",
-                                        organizationPreviewMainIdentifier: "text-white text-xs font-semibold",
-                                        organizationPreviewSecondaryIdentifier: "text-slate-500 text-[10px]",
-                                    }
-                                }}
-                            />
-                        </div>
-                        
-                        <CurrencySwitcher />
-
-                        <Link href="/dashboard/notifications" className="relative group">
-                            <Bell size={22} className="text-slate-300 group-hover:text-white transition-colors" />
-                            {notificationCount > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-[10px] text-white font-bold h-4 w-4 rounded-full flex items-center justify-center border-2 border-[#0c0f17]">
-                                    {notificationCount}
-                                </span>
-                            )}
-                        </Link>
-
-                        <div className="h-6 w-px bg-[#1e2637]"></div>
-
-                        <div className="flex items-center gap-3">
-                            <div className="hidden lg:flex flex-col items-end leading-tight">
-                                <span className="text-sm font-semibold text-white">{user?.fullName || "A. Chen (CFO)"}</span>
-                                <span 
-                                    onClick={handleEditRole}
-                                    className="text-[10px] text-slate-500 font-medium uppercase tracking-wider cursor-pointer hover:text-amber-400 transition-colors"
-                                    title="Click to edit designation"
-                                >
-                                    {organization?.name || customRole}
-                                </span>
-                            </div>
-                            <UserButton appearance={{ elements: { avatarBox: "h-9 w-9" } }} />
-                        </div>
-                    </div>
-                </header>
-
-                {/* Sub-Pages Content */}
-                <div className="flex-1 overflow-auto relative">
-                    {children}
-                </div>
-            </main>
+  return (
+    <aside
+      className={`relative flex flex-col flex-shrink-0 border-r border-[#1e2637] bg-[#0c0f17] transition-all duration-200 overflow-hidden ${sidebarWidth} z-30`}
+      onMouseEnter={() => mode === "hover" && setHovered(true)}
+      onMouseLeave={() => mode === "hover" && setHovered(false)}
+      style={{ minHeight: "100vh" }}
+    >
+      {/* Logo area */}
+      <div className="h-12 flex items-center px-3 border-b border-[#1e2637] flex-shrink-0">
+        <div className="flex items-center gap-2.5 overflow-hidden">
+          <img src="/Logo.png" alt="CFOlytics" className="h-6 w-6 object-contain flex-shrink-0" />
+          {isExpanded && (
+            <span className="text-sm font-bold text-white whitespace-nowrap tracking-tight">CFOlytics</span>
+          )}
         </div>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 py-3 overflow-y-auto overflow-x-hidden">
+        {NAV_GROUPS.map((group, gi) => (
+          <div key={gi} className="mb-1">
+            {isExpanded && (
+              <p className="px-3 py-1.5 text-[10px] font-semibold tracking-widest text-slate-600 uppercase">
+                {group.label}
+              </p>
+            )}
+            {!isExpanded && gi > 0 && (
+              <div className="mx-3 my-2 border-t border-[#1e2637]" />
+            )}
+            {group.items.map((item) => {
+              const active = isActive(item.href, item.exact);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={!isExpanded ? item.label : undefined}
+                  className={`flex items-center gap-2.5 mx-1.5 px-2 py-1.5 rounded-md text-sm transition-colors group ${
+                    active
+                      ? "bg-white/10 text-white"
+                      : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
+                  }`}
+                >
+                  <Icon size={16} className={`flex-shrink-0 ${active ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`} />
+                  {isExpanded && (
+                    <span className="whitespace-nowrap text-[13px]">{item.label}</span>
+                  )}
+                  {active && isExpanded && (
+                    <span className="ml-auto w-1 h-1 rounded-full bg-blue-400" />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+      </nav>
+
+      {/* Footer: Sidebar Mode Switcher */}
+      <div className="border-t border-[#1e2637] py-2 px-1.5 flex-shrink-0">
+        {isExpanded ? (
+          <div className="text-[10px] text-slate-600 px-2 mb-1 uppercase tracking-widest font-semibold">Sidebar</div>
+        ) : null}
+        <div className={`flex ${isExpanded ? "flex-col gap-0.5" : "flex-col items-center gap-0.5"}`}>
+          {(["expanded", "collapsed", "hover"] as SidebarMode[]).map((m) => (
+            <button
+              key={m}
+              onClick={() => { setMode(m); localStorage.setItem("sidebar-mode", m); }}
+              title={m.charAt(0).toUpperCase() + m.slice(1)}
+              className={`flex items-center gap-2 px-2 py-1 rounded-md text-[11px] transition-colors w-full ${
+                mode === m ? "text-white bg-white/10" : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+              }`}
+            >
+              {m === "expanded" && <PanelLeft size={13} />}
+              {m === "collapsed" && <PanelLeftClose size={13} />}
+              {m === "hover" && <PanelLeft size={13} className="opacity-50" />}
+              {isExpanded && <span className="capitalize">{m === "hover" ? "Expand on hover" : m}</span>}
+            </button>
+          ))}
+        </div>
+
+        {/* Sign Out */}
+        <SignOutButton redirectUrl="/">
+          <button className={`flex items-center gap-2 mt-2 w-full px-2 py-1.5 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-colors ${isExpanded ? "" : "justify-center"}`}>
+            <LogOut size={14} />
+            {isExpanded && <span className="text-[13px]">Log Out</span>}
+          </button>
+        </SignOutButton>
+      </div>
+    </aside>
+  );
+}
+
+// ─── Main Layout ─────────────────────────────────────────────────────────────
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const { organization } = useOrganization();
+  const pathname = usePathname();
+
+  const [sidebarMode, setSidebarMode] = useState<SidebarMode>("expanded");
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [customRole, setCustomRole] = useState("Corporate Treasury");
+  const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
+  const [roleInput, setRoleInput] = useState(customRole);
+
+  const botId = organization?.id || "org_default";
+
+  // Notification polling
+  const fetchNotificationCount = async () => {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/count/?bot_id=${botId}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setNotificationCount(data.count);
+      }
+    } catch { /* silent */ }
+  };
+
+  useEffect(() => {
+    if (!isUserLoaded) return;
+    fetchNotificationCount();
+    const interval = setInterval(fetchNotificationCount, 30000);
+    const savedRole = localStorage.getItem("cfolytics_custom_role");
+    if (savedRole) { setCustomRole(savedRole); setRoleInput(savedRole); }
+    const savedMode = localStorage.getItem("sidebar-mode") as SidebarMode | null;
+    if (savedMode) setSidebarMode(savedMode);
+    return () => clearInterval(interval);
+  }, [isUserLoaded, botId]);
+
+  useEffect(() => {
+    if (pathname === "/dashboard/notifications") setNotificationCount(0);
+  }, [pathname]);
+
+  const handleSaveRole = () => {
+    const trimmed = roleInput.trim();
+    if (trimmed) {
+      setCustomRole(trimmed);
+      localStorage.setItem("cfolytics_custom_role", trimmed);
+    }
+    setIsRoleDialogOpen(false);
+  };
+
+  if (!isUserLoaded) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#0a0d14] text-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+          <p className="text-xs text-slate-500">Loading your workspace…</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <CurrencyProvider>
+      {/* Edit Designation Dialog */}
+      <CustomDialog
+        isOpen={isRoleDialogOpen}
+        onClose={() => setIsRoleDialogOpen(false)}
+        title="Edit Designation"
+        description="Update the title displayed next to your name in the header."
+        footer={
+          <>
+            <DialogButton variant="ghost" onClick={() => setIsRoleDialogOpen(false)}>Cancel</DialogButton>
+            <DialogButton variant="primary" onClick={handleSaveRole}>Save</DialogButton>
+          </>
+        }
+      >
+        <input
+          autoFocus
+          type="text"
+          value={roleInput}
+          onChange={(e) => setRoleInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSaveRole()}
+          placeholder="e.g. Chief Financial Officer"
+          className="w-full bg-[#0c0f17] border border-[#2a3448] focus:border-blue-500/50 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 outline-none transition-colors"
+        />
+      </CustomDialog>
+
+      <div className="flex h-screen bg-[#0a0d14] text-white overflow-hidden">
+        {/* ── Sidebar ── */}
+        <Sidebar mode={sidebarMode} setMode={setSidebarMode} />
+
+        {/* ── Main ── */}
+        <main className="flex flex-1 flex-col overflow-hidden">
+
+          {/* ── Compact Header (48px Supabase-style) ── */}
+          <header className="h-12 flex-shrink-0 flex items-center justify-between border-b border-[#1e2637] bg-[#0a0d14] px-4 z-20">
+
+            {/* Left: Org Switcher Breadcrumb */}
+            <div className="flex items-center gap-1.5 text-sm">
+              <OrganizationSwitcher
+                hidePersonal
+                appearance={{
+                  elements: {
+                    organizationSwitcherTrigger: "flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-[#2a3448] hover:bg-white/5 text-slate-300 hover:text-white transition-all text-xs font-medium",
+                    organizationPreviewMainIdentifier: "text-slate-200 text-xs font-medium",
+                    organizationPreviewSecondaryIdentifier: "hidden",
+                    organizationSwitcherTriggerIcon: "text-slate-500",
+                  }
+                }}
+              />
+            </div>
+
+            {/* Center: Search */}
+            <div className="flex-1 max-w-sm mx-6 hidden md:block">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-600" size={13} />
+                <input
+                  type="text"
+                  placeholder="Search or ask AI…"
+                  className="w-full bg-[#131929] border border-[#1e2637] rounded-md py-1.5 pl-8 pr-3 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500/40 focus:bg-[#0f1626] transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-3">
+              <CurrencySwitcher />
+
+              <Link href="/dashboard/notifications" className="relative group p-1.5 rounded-md hover:bg-white/5 transition-colors">
+                <Bell size={16} className="text-slate-400 group-hover:text-white transition-colors" />
+                {notificationCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 bg-red-500 text-[9px] text-white font-bold h-3.5 w-3.5 rounded-full flex items-center justify-center border border-[#0a0d14]">
+                    {notificationCount > 9 ? "9+" : notificationCount}
+                  </span>
+                )}
+              </Link>
+
+              <div className="h-4 w-px bg-[#1e2637]" />
+
+              {/* User Info + Avatar */}
+              <div className="flex items-center gap-2">
+                <div className="hidden lg:flex flex-col items-end leading-none gap-0.5">
+                  <span className="text-xs font-medium text-white">{user?.fullName || user?.firstName || "User"}</span>
+                  <button
+                    onClick={() => { setRoleInput(customRole); setIsRoleDialogOpen(true); }}
+                    className="text-[10px] text-slate-500 hover:text-blue-400 transition-colors uppercase tracking-wider"
+                    title="Click to edit your designation"
+                  >
+                    {organization?.name || customRole}
+                  </button>
+                </div>
+                <UserButton appearance={{ elements: { avatarBox: "h-7 w-7" } }} />
+              </div>
+            </div>
+          </header>
+
+          {/* ── Page Content ── */}
+          <div className="flex-1 overflow-auto">
+            {children}
+          </div>
+        </main>
+      </div>
     </CurrencyProvider>
   );
 }

@@ -71,35 +71,30 @@ export default function UploadPage() {
 
     return (
         <div className="flex-1 overflow-y-auto w-full h-full flex flex-col">
-            <header className="px-8 py-8 shrink-0 border-b border-[#1e2637]">
-                <div className="flex items-start justify-between">
-                    <div>
-                        <h2 className="text-2xl font-bold text-white tracking-tight">Data Ingestion</h2>
-                        <p className="text-sm text-slate-400 mt-1">
-                            Securely upload CSV, Excel, or structured JSON for real-time AI processing.
-                        </p>
+            <header className="flex items-center justify-between px-6 py-4 shrink-0 border-b border-[#1e2637]">
+                <div>
+                    <h2 className="text-base font-semibold text-white">Data Ingestion</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">Securely upload CSV, Excel, or JSON for real-time AI processing.</p>
+                </div>
+                <div className="hidden md:flex items-center gap-4">
+                    <div className="text-center">
+                        <p className="text-lg font-bold text-white">{completedCount}</p>
+                        <p className="text-[10px] text-slate-500">Processed</p>
                     </div>
-                    {/* Summary stats */}
-                    <div className="hidden md:flex items-center gap-6 text-center">
-                        <div>
-                            <p className="text-2xl font-bold text-white">{completedCount}</p>
-                            <p className="text-xs text-slate-500">Files Processed</p>
-                        </div>
-                        <div className="h-8 w-px bg-[#1e2637]" />
-                        <div>
-                            <p className="text-2xl font-bold text-amber-400">{totalRows.toLocaleString("en-IN")}</p>
-                            <p className="text-xs text-slate-500">Total Rows</p>
-                        </div>
-                        {failedCount > 0 && (
-                            <>
-                                <div className="h-8 w-px bg-[#1e2637]" />
-                                <div>
-                                    <p className="text-2xl font-bold text-red-400">{failedCount}</p>
-                                    <p className="text-xs text-slate-500">Failed</p>
-                                </div>
-                            </>
-                        )}
+                    <div className="h-6 w-px bg-[#1e2637]" />
+                    <div className="text-center">
+                        <p className="text-lg font-bold text-amber-400">{totalRows.toLocaleString()}</p>
+                        <p className="text-[10px] text-slate-500">Total Rows</p>
                     </div>
+                    {failedCount > 0 && (
+                        <>
+                            <div className="h-6 w-px bg-[#1e2637]" />
+                            <div className="text-center">
+                                <p className="text-lg font-bold text-red-400">{failedCount}</p>
+                                <p className="text-[10px] text-slate-500">Failed</p>
+                            </div>
+                        </>
+                    )}
                 </div>
             </header>
 

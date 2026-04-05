@@ -22,6 +22,8 @@ from .views import (
     update_anomaly_status, anomaly_comments,
     audit_trail, audit_export_csv,
     daily_briefing,
+    WorkspaceListCreateView, WorkspaceRetrieveUpdateDestroyView,
+    GoalTargetListCreateView, OrgChatMessageListCreateView
 )
 
 urlpatterns = [
@@ -90,4 +92,10 @@ urlpatterns = [
     # Sprint 11: Phase 3 — Immutable Audit Trail
     path('audit/', audit_trail, name='audit-trail'),
     path('audit/export/', audit_export_csv, name='audit-export-csv'),
+
+    # Sprint 15: Workspaces, Setting Goals, and Org Chat
+    path('workspaces/', WorkspaceListCreateView.as_view(), name='workspace-list'),
+    path('workspaces/<int:pk>/', WorkspaceRetrieveUpdateDestroyView.as_view(), name='workspace-detail'),
+    path('goals/', GoalTargetListCreateView.as_view(), name='goaltarget-list'),
+    path('org-chat/', OrgChatMessageListCreateView.as_view(), name='orgchatmessage-list'),
 ]

@@ -3,7 +3,8 @@ from .models import (
     UploadedFile, ParsedRecord,
     Transaction, DepartmentData,
     KPISnapshot, ForecastResult, AnomalyLog, Recommendation, Budget,
-    PurchaseOrder, Invoice
+    PurchaseOrder, Invoice,
+    Workspace, GoalTarget, OrgChatMessage
 )
 
 
@@ -65,7 +66,24 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InvoiceSerializer(serializers.ModelSerializer):
-    # If we want to nest PO data in GET requests, we can do it here later.
     class Meta:
         model = Invoice
+        fields = '__all__'
+
+
+class WorkspaceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Workspace
+        fields = '__all__'
+
+
+class GoalTargetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GoalTarget
+        fields = '__all__'
+
+
+class OrgChatMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrgChatMessage
         fields = '__all__'

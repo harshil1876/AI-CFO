@@ -46,19 +46,18 @@ export default function PipelinePage() {
     };
 
     return (
-        <div className="flex-1 overflow-y-auto w-full h-full flex flex-col">
-            <header className="px-8 py-8 shrink-0">
-                <div>
-                    <h2 className="text-2xl font-bold text-white tracking-tight">
-                        Intelligence Pipeline
-                    </h2>
-                    <p className="text-sm text-slate-400 mt-1">
-                        Run calculation, forecasting, prescriptive analytics, RAG sync, and send alerts.
-                    </p>
+        <div className="w-full h-full flex flex-col bg-[#0a0d14] overflow-y-auto">
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-[#1e2637] flex-shrink-0 bg-[#0c0f17]">
+                <div className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                    <span className="text-yellow-400 text-sm">⚡</span>
                 </div>
-            </header>
-            
-            <div className="p-6 h-full w-full animate-in fade-in duration-500">
+                <div>
+                    <h2 className="text-base font-semibold text-white">Intelligence Pipeline</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">Run calculation, forecasting, prescriptive analytics, RAG sync, and send alerts.</p>
+                </div>
+            </div>
+
+            <div className="p-6 flex-1">
                 <div className="mx-auto max-w-2xl space-y-6 mt-10">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center shadow-xl">
                         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/10">

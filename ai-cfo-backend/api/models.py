@@ -527,3 +527,61 @@ class AnomalyComment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.user_email} on Anomaly {self.anomaly.id}"
+
+# ─────────────────────────────────────────────────────────────
+# Sprint 15: Workspace Architecture & Org Features
+# ─────────────────────────────────────────────────────────────
+
+class Workspace(models.Model):
+    """
+    Sub-level isolation within a single Clerk Organization (bot_id).
+    Allows an enterprise to have multiple isolated ledgers (e.g. US Branch, EU Branch).
+    """
+    org_id = models.CharField(max_length=255, db_index=True)  # The overarching Clerk Org
+    name = models.CharField(max_length=255)
+    entity_type = models.CharField(max_length=100, default='Corporate')
+    description = models.TextField(blank=True, null=True)
+    currency = models.CharField(max_length=10, default='USD')
+    
+    # All lower-level resources should theoretically link to workspace_id moving forward,
+    # but for Sprint 15 MVP we will inject workspace_id as a contextual filter.
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} (Org: {self.org_id})"
+
+
+class GoalTarget(models.Model):
+    """
+    Drives the BI Radial KPI Widgets on the dashboard.
+    """
+    bot_id = models.CharField(max_length=255, db_index=True)
+    workspace_id = models.CharField(max_length=255, blank=True, null=True)
+    
+    goal_name = models.CharField(max_length=255)  # e.g., "Q2 Revenue Goal"
+    target_value = models.DecimalField(max_digits=15, decimal_places=2)
+    period = models.CharField(max_length=50)      # e.g., "Q2-2026"
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.goal_name} - ${self.target_value}"
+
+
+class OrgChatMessage(models.Model):
+    """
+    Real-time internal team discussion threads.
+    """
+    org_id = models.CharField(max_length=255, db_index=True)
+    workspace_id = models.CharField(max_length=255, blank=True, null=True)
+    
+    user_id = models.CharField(max_length=255)
+    user_name = models.CharField(max_length=255)
+    user_avatar = models.TextField(blank=True, null=True)
+    
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Message from {self.user_name} at {self.created_at}"

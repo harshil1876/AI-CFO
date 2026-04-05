@@ -87,14 +87,17 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.environ.get("DB_NAME", "postgres"),
-        "USER": os.environ.get("DB_USER", ""),
+        "USER": os.environ.get("DB_USER", "postgres"),
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
         "HOST": os.environ.get("DB_HOST", "localhost"),
-        "PORT": os.environ.get("DB_PORT", "6543"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
         "OPTIONS": {
             "sslmode": "require",
         },
-        "CONN_MAX_AGE": 600,
+        # IMPORTANT: Must be 0 when using Supabase Session Pooler.
+        # Persistent connections (>0) exhaust the pool_size limit,
+        # causing "MaxClientsInSessionMode: max clients reached" errors.
+        "CONN_MAX_AGE": 0,
     }
 }
 

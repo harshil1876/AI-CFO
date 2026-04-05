@@ -2,7 +2,8 @@
 import { useState, ReactNode, useEffect, useRef } from "react";
 import { useUser, useOrganization, UserButton, SignOutButton, OrganizationSwitcher } from "@clerk/nextjs";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useWorkspace } from "@/context/WorkspaceContext";
 import {
   LayoutDashboard, MessageSquare, BarChart3, Receipt,
   UploadCloud, Zap, FlaskConical, Link2,
@@ -39,6 +40,7 @@ const NAV_GROUPS = [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
       { href: "/dashboard/reports", label: "Financial Reports", icon: BarChart },
       { href: "/dashboard/budget", label: "Budgeting", icon: BarChart3 },
+      { href: "/dashboard/org-chat", label: "Org Chat", icon: MessageSquare },
     ],
   },
   {
@@ -62,7 +64,15 @@ const NAV_GROUPS = [
     label: "GOVERNANCE",
     items: [
       { href: "/dashboard/audit", label: "Audit Trail", icon: History },
-      { href: "/dashboard/team", label: "Team Permissions", icon: Shield },
+      { href: "/dashboard/team", label: "Permissions", icon: Shield },
+      { href: "/dashboard/team-status", label: "Team Directory", icon: Users },
+    ],
+  },
+  {
+    label: "SETTINGS",
+    items: [
+      { href: "/dashboard/settings/workspace", label: "Workspace Settings", icon: Settings },
+      { href: "/dashboard/settings/organization", label: "Organization Settings", icon: Settings },
     ],
   },
 ];
@@ -178,6 +188,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, isLoaded: isUserLoaded } = useUser();
   const { organization } = useOrganization();
   const pathname = usePathname();
+  const router = useRouter();
+  const { activeWorkspaceId, isWorkspaceLoaded } = useWorkspace();
 
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>("expanded");
   const [notificationCount, setNotificationCount] = useState(0);
@@ -198,6 +210,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       }
     } catch { /* silent */ }
   };
+
+  // Redirect to Workspace Gateway if no workspace is selected
+  useEffect(() => {
+    if (isWorkspaceLoaded && !activeWorkspaceId) {
+      router.push('/workspaces');
+    }
+  }, [isWorkspaceLoaded, activeWorkspaceId, router]);
 
   useEffect(() => {
     if (!isUserLoaded) return;
@@ -232,6 +251,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
     );
+  }
+
+  // Prevent flashing dashboard UI before redirect
+  if (isWorkspaceLoaded && !activeWorkspaceId) {
+    return null;
   }
 
   return (

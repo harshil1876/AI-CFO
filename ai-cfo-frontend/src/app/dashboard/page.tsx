@@ -1,16 +1,62 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useUser, useOrganization } from "@clerk/nextjs";
 import MetricsGrid from "@/components/MetricsGrid";
 import FinancialChart from "@/components/FinancialChart";
-import { Target, Users, MessageSquare, TrendingUp, TrendingDown, Minus, Clock } from "lucide-react";
+import { useWorkspace } from "@/context/WorkspaceContext";
+import { Target, Users, MessageSquare, TrendingUp, TrendingDown, Minus, Clock, FileText } from "lucide-react";
+import { getAuthHeaders } from "@/lib/api";
+
+import { useRouter } from 'next/navigation';
 
 // ─── Target KPI Radial Widget ───────────────────────────────────────────────
-function TargetKpiWidget() {
-  const percent = 43; // Hardcoded until real goal-tracking API is ready
+function TargetKpiWidget({ botId }: { botId: string }) {
+  const { activeWorkspaceId } = useWorkspace();
+  const [goal, setGoal] = useState<any>(null);
+  const [actualRev, setActualRev] = useState(0);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!botId) return;
+
+    const fetchKPIs = async () => {
+      try {
+        const headers = await getAuthHeaders();
+        // 1. Fetch Goal
+        const goalRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/goals/?workspace_id=${activeWorkspaceId || ''}&bot_id=${botId}`, { headers });
+        let targetGoal = { goal_name: "Target Revenue", target_value: 0 }; 
+        if (goalRes.ok) {
+          const goalsList = await goalRes.json();
+          if (goalsList.length > 0) targetGoal = goalsList[0];
+        }
+        setGoal(targetGoal);
+
+        // 2. Fetch Actual Revenue
+        const kpiRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/kpis/?bot_id=${botId}`, { headers });
+        if (kpiRes.ok) {
+          const kpis = await kpiRes.json();
+          const revs = kpis.filter((k: any) => k.metric_name === "Revenue");
+          if (revs.length > 0) {
+            // Take the latest revenue entry or sum them (simplifying to latest)
+            setActualRev(revs[0].value);
+          } else {
+            setActualRev(0);
+          }
+        }
+      } catch (err) {}
+    };
+
+    fetchKPIs();
+  }, [botId, activeWorkspaceId]);
+
+  const rawPercent = goal && goal.target_value > 0 ? (actualRev / goal.target_value) * 100 : 0;
+  const percent = Math.min(Math.round(rawPercent), 100);
   const radius = 36;
   const circ = 2 * Math.PI * radius;
   const dash = (percent / 100) * circ;
+
+  if (!goal) return null;
 
   return (
     <div className="rounded-xl border border-[#1e2637] bg-[#121622] p-5 flex flex-col gap-4">
@@ -38,9 +84,14 @@ function TargetKpiWidget() {
           </div>
         </div>
         <div>
-          <p className="text-sm font-semibold text-white">Q2 Revenue Goal</p>
-          <p className="text-xs text-slate-500 mt-0.5">$215k of $500k target</p>
-          <button className="mt-3 px-3 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 text-xs font-medium rounded-md border border-blue-500/20 transition-colors">
+          <p className="text-sm font-semibold text-white">{goal.goal_name}</p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            ${(actualRev / 1000).toFixed(1)}k of ${(goal.target_value / 1000).toFixed(1)}k
+          </p>
+          <button 
+            onClick={() => router.push('/dashboard/reports')}
+            className="mt-3 px-3 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 text-xs font-medium rounded-md border border-blue-500/20 transition-colors cursor-pointer"
+          >
             Drill Down →
           </button>
         </div>
@@ -51,11 +102,20 @@ function TargetKpiWidget() {
 
 // ─── Team Status Widget ─────────────────────────────────────────────────────
 function TeamStatusWidget() {
-  const members = [
-    { name: "Harshil P.", role: "CFO", status: "online" },
-    { name: "Priya S.", role: "Analyst", status: "away" },
-    { name: "Rohan M.", role: "Controller", status: "offline" },
-  ];
+  const { user } = useUser();
+  const { memberships } = useOrganization({
+    memberships: true
+  });
+
+  const members = memberships?.data?.map(m => {
+    const pubUser = m.publicUserData;
+    return {
+      name: pubUser?.firstName || pubUser?.identifier || "Unknown",
+      role: m.role.split(':')[1] || m.role, // e.g. "org:admin" -> "admin"
+      status: (pubUser?.identifier === user?.primaryEmailAddress?.emailAddress) ? "online" : "away"
+    };
+  }) || [];
+
   const statusColor: Record<string, string> = {
     online: "bg-emerald-500",
     away: "bg-amber-500",
@@ -70,38 +130,51 @@ function TeamStatusWidget() {
         </div>
       </div>
       <div className="space-y-2.5">
-        {members.map((m) => (
+        {members.slice(0, 3).map((m: any) => (
           <div key={m.name} className="flex items-center gap-3">
             <div className="relative">
-              <div className="h-7 w-7 rounded-full bg-[#1e2637] flex items-center justify-center text-xs font-semibold text-white">
-                {m.name[0]}
+              <div className="h-7 w-7 rounded-full bg-[#1e2637] flex items-center justify-center text-xs font-semibold text-white uppercase">
+                {m.name?.[0] || '?'}
               </div>
               <span className={`absolute bottom-0 right-0 h-2 w-2 rounded-full border border-[#121622] ${statusColor[m.status]}`} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-white truncate">{m.name}</p>
-              <p className="text-[10px] text-slate-500">{m.role}</p>
+              <p className="text-[10px] text-slate-500 uppercase">{m.role}</p>
             </div>
             <span className={`text-[10px] font-medium capitalize ${m.status === "online" ? "text-emerald-400" : m.status === "away" ? "text-amber-400" : "text-slate-600"}`}>
               {m.status}
             </span>
           </div>
         ))}
+        {members.length === 0 && <p className="text-xs text-slate-500">No team members</p>}
       </div>
     </div>
   );
 }
 
 // ─── Quick Activity Feed ─────────────────────────────────────────────────────
-function ActivityFeed() {
-  const events = [
-    { icon: TrendingUp, text: "Revenue forecast updated by AI", time: "2m ago", color: "text-emerald-400" },
-    { icon: Target, text: "Q2 budget variance flagged", time: "18m ago", color: "text-amber-400" },
-    { icon: TrendingDown, text: "Anomaly detected in OPEX", time: "1h ago", color: "text-red-400" },
-    { icon: Clock, text: "Audit log exported by admin", time: "3h ago", color: "text-blue-400" },
-  ];
+function ActivityFeed({ botId }: { botId: string }) {
+  const [events, setEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAudit = async () => {
+      try {
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/audit/?bot_id=${botId}&limit=4`, { 
+          headers: { ...headers, "X-Org-Role": "org:admin" } 
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setEvents(data.slice(0, 4));
+        }
+      } catch (err) {}
+    };
+    fetchAudit();
+  }, [botId]);
+
   return (
-    <div className="rounded-xl border border-[#1e2637] bg-[#121622] p-5 flex flex-col gap-3">
+    <div className="rounded-xl border border-[#1e2637] bg-[#121622] p-5 flex flex-col gap-3 w-full">
       <div className="flex items-center justify-between">
         <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Recent Activity</h3>
         <div className="bg-purple-500/10 rounded-lg p-1.5">
@@ -109,20 +182,25 @@ function ActivityFeed() {
         </div>
       </div>
       <div className="space-y-3">
-        {events.map((e, i) => {
-          const Icon = e.icon;
-          return (
+        {events.length === 0 ? (
+          <p className="text-xs text-slate-500">No recent activity.</p>
+        ) : (
+          events.map((e, i) => (
             <div key={i} className="flex items-start gap-2.5">
               <div className="mt-0.5 flex-shrink-0">
-                <Icon size={13} className={e.color} />
+                <FileText size={13} className="text-blue-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-slate-300 leading-snug">{e.text}</p>
+                <p className="text-xs text-slate-300 leading-snug">
+                  {e.user_email} performed <span className="font-semibold text-blue-400">{e.action}</span>
+                </p>
               </div>
-              <span className="text-[10px] text-slate-600 flex-shrink-0">{e.time}</span>
+              <span className="text-[10px] text-slate-600 flex-shrink-0">
+                {new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
             </div>
-          );
-        })}
+          ))
+        )}
       </div>
     </div>
   );
@@ -167,13 +245,13 @@ export default function DashboardOverviewPage() {
 
           {/* Right column widgets */}
           <div className="flex flex-col gap-4">
-            <TargetKpiWidget />
+            <TargetKpiWidget botId={BOT_ID} />
             <TeamStatusWidget />
           </div>
         </div>
 
         {/* Third Row: Activity Feed */}
-        <ActivityFeed />
+        <ActivityFeed botId={BOT_ID} />
       </div>
     </div>
   );

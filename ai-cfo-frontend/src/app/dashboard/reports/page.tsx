@@ -158,19 +158,21 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-8">
+    <div className="w-full h-full flex flex-col bg-[#0a0d14] overflow-y-auto">
       
-      {/* 1. Dynamic De-Cardified Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-amber-500/10 pb-6 print:hidden">
-        <div>
-          <h1 className={`text-3xl font-bold flex items-center gap-3 ${THEME.gradient_text}`}>
-            <FileText className="h-8 w-8 text-amber-500" />
-            Financial Reports
-          </h1>
-          <p className="text-slate-400 mt-2">Dynamically generated boardroom-ready statements perfectly formatted for executives.</p>
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between px-6 py-4 border-b border-[#1e2637] flex-shrink-0 bg-[#0c0f17] print:hidden gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <FileText className="w-5 h-5 text-amber-500" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-white">Financial Reports</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Boardroom-ready statements perfectly formatted for executives.</p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-4 bg-black/20 p-3 rounded-lg border border-amber-500/20 backdrop-blur-sm shadow-xl">
+        <div className="flex items-center gap-4 bg-[#121622] p-2 rounded-lg border border-[#1e2637]">
           {activeTab !== "balancesheet" && (
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-amber-500" />

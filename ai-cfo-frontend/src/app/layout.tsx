@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 import { Toaster } from 'sonner';
+import { WorkspaceProvider } from "@/context/WorkspaceContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -30,7 +31,9 @@ export default function RootLayout({
       <html lang="en" className="dark">
         <body className={`${inter.variable} font-sans antialiased text-slate-300 bg-[#0a0d14]`}>
           <Toaster theme="dark" position="top-right" />
-          {children}
+          <WorkspaceProvider>
+            {children}
+          </WorkspaceProvider>
         </body>
       </html>
     </ClerkProvider>

@@ -6,7 +6,8 @@ from .models import (
     UploadedFile, ParsedRecord,
     Transaction, DepartmentData,
     KPISnapshot, ForecastResult, AnomalyLog, Recommendation,
-    DataSource, ConnectorSyncLog, Budget, PurchaseOrder, Invoice, NotificationMeta
+    DataSource, ConnectorSyncLog, Budget, PurchaseOrder, Invoice, NotificationMeta,
+    Workspace, GoalTarget, OrgChatMessage
 )
 from django.utils import timezone
 from .serializers import (
@@ -14,7 +15,8 @@ from .serializers import (
     TransactionSerializer, DepartmentDataSerializer,
     KPISnapshotSerializer, ForecastResultSerializer,
     AnomalyLogSerializer, RecommendationSerializer, BudgetSerializer,
-    PurchaseOrderSerializer, InvoiceSerializer
+    PurchaseOrderSerializer, InvoiceSerializer,
+    WorkspaceSerializer, GoalTargetSerializer, OrgChatMessageSerializer
 )
 from .services.descriptive_analytics import calculate_kpis
 from .services.forecasting import run_revenue_forecast
@@ -1095,3 +1097,54 @@ def daily_briefing(request):
 
     brief = generate_morning_brief(bot_id)
     return Response(brief)
+
+# ──────────────────────────────────────────────
+# Sprint 15: Workspace Architecture & Org Chat
+# ──────────────────────────────────────────────
+
+class WorkspaceListCreateView(generics.ListCreateAPIView):
+    """
+    List and create Workspaces for a specific overarching org_id (bot_id).
+    """
+    serializer_class = WorkspaceSerializer
+
+    def get_queryset(self):
+        org_id = self.request.query_params.get("org_id")
+        qs = Workspace.objects.all().order_by('-created_at')
+        if org_id:
+            qs = qs.filter(org_id=org_id)
+        return qs
+
+class WorkspaceRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Workspace.objects.all()
+    serializer_class = WorkspaceSerializer
+
+class GoalTargetListCreateView(generics.ListCreateAPIView):
+    """
+    List/Create Goals for KPI Radial tracking per workspace.
+    """
+    serializer_class = GoalTargetSerializer
+
+    def get_queryset(self):
+        bot_id = self.request.query_params.get("bot_id")
+        workspace_id = self.request.query_params.get("workspace_id")
+        qs = GoalTarget.objects.all().order_by('-created_at')
+        if bot_id:
+            qs = qs.filter(bot_id=bot_id)
+        if workspace_id:
+            qs = qs.filter(workspace_id=workspace_id)
+        return qs
+
+class OrgChatMessageListCreateView(generics.ListCreateAPIView):
+    """
+    Simple real-time organization chat messaging polling endpoint.
+    """
+    serializer_class = OrgChatMessageSerializer
+
+    def get_queryset(self):
+        org_id = self.request.query_params.get("org_id")
+        limit = int(self.request.query_params.get("limit", 50))
+        qs = OrgChatMessage.objects.all().order_by('-created_at')
+        if org_id:
+            qs = qs.filter(org_id=org_id)
+        return qs[:limit]

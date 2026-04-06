@@ -117,6 +117,71 @@ class DepartmentDataListCreateView(generics.ListCreateAPIView):
 
 
 # ──────────────────────────────────────────────
+# Sprint 17: Transaction Review Status PATCH
+# ──────────────────────────────────────────────
+
+@api_view(['PATCH'])
+def update_transaction_status(request, transaction_id):
+    """
+    PATCH /api/transactions/<id>/status/
+    Body: { "review_status": "reviewed" | "flagged" | "approved" | "pending" }
+    """
+    bot_id = request.query_params.get('bot_id') or request.data.get('bot_id')
+    new_status = request.data.get('review_status')
+    VALID_STATUSES = ['pending', 'reviewed', 'flagged', 'approved']
+
+    if not new_status or new_status not in VALID_STATUSES:
+        return Response(
+            {'error': f'review_status must be one of: {VALID_STATUSES}'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        qs = Transaction.objects.filter(pk=transaction_id)
+        if bot_id:
+            qs = qs.filter(bot_id=bot_id)
+        txn = qs.get()
+        txn.review_status = new_status
+        txn.save(update_fields=['review_status'])
+        return Response({'id': txn.id, 'review_status': txn.review_status})
+    except Transaction.DoesNotExist:
+        return Response({'error': 'Transaction not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+# ──────────────────────────────────────────────
+# Sprint 17: Usage Metrics Endpoint
+# ──────────────────────────────────────────────
+
+@api_view(['GET'])
+def usage_metrics(request):
+    """
+    GET /api/usage/?bot_id=xxx
+    Returns real org-level usage stats: file uploads, rows ingested, transactions, chat queries.
+    """
+    import os
+    bot_id = request.query_params.get('bot_id')
+    if not bot_id:
+        return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    file_count = UploadedFile.objects.filter(bot_id=bot_id).count()
+    total_rows = UploadedFile.objects.filter(bot_id=bot_id).values_list('row_count', flat=True)
+    rows_ingested = sum(total_rows)
+    transaction_count = Transaction.objects.filter(bot_id=bot_id).count()
+
+    # Approximate DB space: avg 500 bytes per row
+    db_bytes = rows_ingested * 500
+    db_mb = round(db_bytes / (1024 * 1024), 2)
+
+    return Response({
+        'file_uploads': file_count,
+        'rows_ingested': rows_ingested,
+        'transaction_count': transaction_count,
+        'db_storage_mb': db_mb,
+        'db_storage_display': f"{db_mb} MB" if db_mb < 1000 else f"{round(db_mb/1024, 2)} GB",
+    })
+
+
+# ──────────────────────────────────────────────
 # Sprint 2: Intelligence Engine Endpoints
 # ──────────────────────────────────────────────
 

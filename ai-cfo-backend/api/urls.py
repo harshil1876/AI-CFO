@@ -24,7 +24,9 @@ from .views import (
     daily_briefing,
     WorkspaceListCreateView, WorkspaceRetrieveUpdateDestroyView,
     GoalTargetListCreateView, OrgChatMessageListCreateView,
-    workspace_set_status
+    workspace_set_status,
+    # Sprint 17: New endpoints
+    update_transaction_status, usage_metrics,
 )
 
 urlpatterns = [
@@ -100,4 +102,8 @@ urlpatterns = [
     path('workspaces/<int:pk>/status/', workspace_set_status, name='workspace-set-status'),
     path('goals/', GoalTargetListCreateView.as_view(), name='goaltarget-list'),
     path('org-chat/', OrgChatMessageListCreateView.as_view(), name='orgchatmessage-list'),
+
+    # Sprint 17: Transaction Review & Usage Metrics
+    path('transactions/<int:transaction_id>/status/', update_transaction_status, name='transaction-status-update'),
+    path('usage/', usage_metrics, name='usage-metrics'),
 ]

@@ -40,6 +40,33 @@ export default function FileUpload({ botId, onUploadComplete }: FileUploadProps)
         try {
             const response = await uploadFile(botId, file);
             setResult(response);
+            if (response.status === "completed") {
+                // Auto-trigger pipeline in the background
+                (async () => {
+                   try {
+                       const { getAuthHeaders } = await import("@/lib/api");
+                       const headers = await getAuthHeaders();
+                       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+                       const period = new Date().toISOString().slice(0, 7);
+                       // 1. Run Analytics (KPIs & Anomalies)
+                       await fetch(`${API_URL}/analytics/run/`, {
+                           method: "POST", headers: { "Content-Type": "application/json", ...headers },
+                           body: JSON.stringify({ bot_id: botId, period })
+                       });
+                       // 2. Run Forecast
+                       await fetch(`${API_URL}/forecast/run/`, {
+                           method: "POST", headers: { "Content-Type": "application/json", ...headers },
+                           body: JSON.stringify({ bot_id: botId, months: 6 })
+                       });
+                       // 3. Sync RAG
+                       await fetch(`${API_URL}/chat/${botId}/sync/`, {
+                           method: "POST", headers: { "Content-Type": "application/json", ...headers }
+                       });
+                   } catch (e) {
+                       console.error("Auto-pipeline failed", e);
+                   }
+                })();
+            }
             if (onUploadComplete) onUploadComplete(response);
         } catch {
             setResult({ status: "failed", error: "Upload failed. Check your connection." });

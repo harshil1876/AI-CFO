@@ -157,6 +157,12 @@ class ParsedRecord(models.Model):
 
 
 class Transaction(models.Model):
+    REVIEW_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('reviewed', 'Reviewed'),
+        ('flagged', 'Flagged'),
+        ('approved', 'Approved'),
+    ]
     # Isolated by bot_id to ensure multi-tenancy
     bot_id = models.CharField(max_length=255, db_index=True)
     
@@ -164,6 +170,7 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     description = models.TextField(blank=True, null=True)
     category = models.CharField(max_length=255)
+    review_status = models.CharField(max_length=20, choices=REVIEW_STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

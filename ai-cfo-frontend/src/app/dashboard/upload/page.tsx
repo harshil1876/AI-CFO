@@ -8,6 +8,7 @@ import {
     CheckCircle, XCircle, Clock, Loader2,
     FileText, RefreshCw, AlertTriangle
 } from "lucide-react";
+import { toast } from "sonner";
 
 const STATUS_CONFIG: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
     completed:  { icon: <CheckCircle className="h-4 w-4" />,  color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
@@ -62,6 +63,11 @@ export default function UploadPage() {
 
     const handleUploadComplete = async (result: UploadResponse) => {
         setRecentUpload(result);
+        if (result.status === "completed") {
+            toast.success("File uploaded successfully. AI is analyzing your data in the background.", { duration: 5000 });
+        } else if (result.status === "failed") {
+            toast.error(`Upload failed: ${result.error}`);
+        }
         await loadFiles();
     };
 

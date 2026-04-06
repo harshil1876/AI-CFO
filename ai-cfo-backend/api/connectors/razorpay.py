@@ -1,8 +1,13 @@
 """
-Sprint 6: Razorpay Connector
-Fetches payments from the Razorpay Payments API.
-Config keys: { "key_id": "rzp_live_xxx", "key_secret": "your_secret", "currency": "INR" }
+Sprint 6 / Sprint 17: Razorpay Connector (India-first)
+Fetches captured payments from the Razorpay Payments API.
+
+Config keys stored in DataSource.config:
+  { "key_id": "rzp_xxx", "key_secret": "your_secret", "currency": "INR" }
+
+Falls back to RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET env vars if config is empty.
 """
+import os
 import logging
 import datetime
 from decimal import Decimal
@@ -18,13 +23,26 @@ class RazorpayConnector(BaseConnector):
     """
     Fetches payment and refund events from the Razorpay Payments API.
     Uses HTTP Basic Auth with key_id and key_secret.
+    Falls back to environment variables if DataSource.config is not set.
     """
 
-    def _auth(self):
-        return (self.config['key_id'], self.config['key_secret'])
+    def _get_creds(self):
+        key_id = self.config.get('key_id') or os.environ.get('RAZORPAY_KEY_ID', '')
+        key_secret = self.config.get('key_secret') or os.environ.get('RAZORPAY_KEY_SECRET', '')
+        if not key_id or not key_secret:
+            raise ValueError(
+                "Razorpay credentials not found. Set key_id/key_secret in DataSource config "
+                "or RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET environment variables."
+            )
+        return key_id, key_secret
 
     def authenticate(self) -> bool:
-        resp = requests.get(f"{RAZORPAY_API_BASE}/payments?count=1", auth=self._auth(), timeout=10)
+        key_id, key_secret = self._get_creds()
+        resp = requests.get(
+            f"{RAZORPAY_API_BASE}/payments?count=1",
+            auth=(key_id, key_secret),
+            timeout=10
+        )
         if resp.status_code == 200:
             logger.info(f"[{self.bot_id}] Razorpay auth OK")
             return True
@@ -32,9 +50,10 @@ class RazorpayConnector(BaseConnector):
 
     def fetch_transactions(self) -> list[dict]:
         """
-        Fetches up to 100 most recent captured payments.
-        Uses Razorpay's pagination `count` and `skip` params for large datasets.
+        Fetches all captured payments using pagination.
+        Uses Razorpay's `count` and `skip` params.
         """
+        key_id, key_secret = self._get_creds()
         all_payments = []
         skip = 0
         count = 100
@@ -42,12 +61,12 @@ class RazorpayConnector(BaseConnector):
         while True:
             resp = requests.get(
                 f"{RAZORPAY_API_BASE}/payments",
-                auth=self._auth(),
-                params={'count': count, 'skip': skip},
-                timeout=15
+                auth=(key_id, key_secret),
+                params={'count': count, 'skip': skip, 'expand[]': 'order'},
+                timeout=20
             )
             if resp.status_code != 200:
-                logger.error(f"[{self.bot_id}] Razorpay fetch error: {resp.text}")
+                logger.error(f"[{self.bot_id}] Razorpay fetch error: {resp.status_code} {resp.text}")
                 break
 
             data = resp.json()
@@ -63,7 +82,7 @@ class RazorpayConnector(BaseConnector):
 
     def transform(self, raw: dict) -> dict | None:
         try:
-            # Only capture captured payments — skip failed/pending
+            # Only process captured payments — skip failed/pending/refunded
             if raw.get('status') != 'captured':
                 return None
 
@@ -75,7 +94,16 @@ class RazorpayConnector(BaseConnector):
             ts = raw.get('created_at', 0)
             date = datetime.datetime.fromtimestamp(ts).date().isoformat()
 
-            description = raw.get('description') or raw.get('email') or raw.get('id', '')
+            # Best-effort description: use order description, email, or payment ID
+            description = (
+                raw.get('description')
+                or raw.get('email')
+                or raw.get('contact')
+                or raw.get('id', '')
+            )
+            method = raw.get('method', '')
+            if method:
+                description = f"[{method.upper()}] {description}"
 
             return {
                 'date': date,
@@ -85,5 +113,5 @@ class RazorpayConnector(BaseConnector):
                 'currency': currency,
             }
         except Exception as e:
-            logger.warning(f"[RazorpayConnector] transform error: {e}")
+            logger.warning(f"[RazorpayConnector] transform error: {e} | raw={raw.get('id')}")
             return None

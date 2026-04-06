@@ -23,7 +23,8 @@ from .views import (
     audit_trail, audit_export_csv,
     daily_briefing,
     WorkspaceListCreateView, WorkspaceRetrieveUpdateDestroyView,
-    GoalTargetListCreateView, OrgChatMessageListCreateView
+    GoalTargetListCreateView, OrgChatMessageListCreateView,
+    workspace_set_status
 )
 
 urlpatterns = [
@@ -93,9 +94,10 @@ urlpatterns = [
     path('audit/', audit_trail, name='audit-trail'),
     path('audit/export/', audit_export_csv, name='audit-export-csv'),
 
-    # Sprint 15: Workspaces, Setting Goals, and Org Chat
+    # Sprint 15 / 16: Workspaces, Setting Goals, Org Chat, and Lifecycle
     path('workspaces/', WorkspaceListCreateView.as_view(), name='workspace-list'),
     path('workspaces/<int:pk>/', WorkspaceRetrieveUpdateDestroyView.as_view(), name='workspace-detail'),
+    path('workspaces/<int:pk>/status/', workspace_set_status, name='workspace-set-status'),
     path('goals/', GoalTargetListCreateView.as_view(), name='goaltarget-list'),
     path('org-chat/', OrgChatMessageListCreateView.as_view(), name='orgchatmessage-list'),
 ]

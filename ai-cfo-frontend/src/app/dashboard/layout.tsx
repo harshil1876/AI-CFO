@@ -9,7 +9,7 @@ import {
   UploadCloud, Zap, FlaskConical, Link2,
   Bell, Search, LogOut, Shield, AlertTriangle,
   History, BarChart, ChevronDown, Settings, Users,
-  PanelLeft, PanelLeftClose, BrainCircuit
+  PanelLeft, PanelLeftClose, BrainCircuit, ChevronRight, Pause, Plus
 } from "lucide-react";
 import { getAuthHeaders } from "@/lib/api";
 import { CurrencyProvider, useCurrency } from "@/context/CurrencyContext";
@@ -189,7 +189,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { organization } = useOrganization();
   const pathname = usePathname();
   const router = useRouter();
-  const { activeWorkspaceId, isWorkspaceLoaded } = useWorkspace();
+  const { activeWorkspaceId, activeWorkspace, setActiveWorkspace, isWorkspaceLoaded } = useWorkspace();
+  const isPaused = activeWorkspace?.status === 'paused';
 
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>("expanded");
   const [notificationCount, setNotificationCount] = useState(0);
@@ -211,12 +212,36 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     } catch { /* silent */ }
   };
 
-  // Redirect to Workspace Gateway if no workspace is selected
   useEffect(() => {
     if (isWorkspaceLoaded && !activeWorkspaceId) {
       router.push('/workspaces');
     }
   }, [isWorkspaceLoaded, activeWorkspaceId, router]);
+
+  // Fetch workspace metadata if we have an ID but no metadata in context
+  useEffect(() => {
+    if (activeWorkspaceId && !activeWorkspace) {
+      getAuthHeaders().then(headers => {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/workspaces/${activeWorkspaceId}/`, { headers })
+          .then(res => {
+            if (res.ok) return res.json();
+            throw new Error('Workspace not found');
+          })
+          .then(data => {
+            setActiveWorkspace({
+              id: String(data.id),
+              name: data.name,
+              status: data.status,
+              currency: data.currency,
+              region: data.region,
+            });
+          })
+          .catch(() => {
+            router.push('/workspaces');
+          });
+      });
+    }
+  }, [activeWorkspaceId, activeWorkspace, setActiveWorkspace, router]);
 
   useEffect(() => {
     if (!isUserLoaded) return;
@@ -291,22 +316,46 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* ── Main ── */}
         <main className="flex flex-1 flex-col overflow-hidden">
 
+          {/* ── Paused Workspace Banner ── */}
+          {isPaused && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-400 text-xs">
+              <Pause size={12} />
+              <span>
+                <strong>{activeWorkspace?.name}</strong> is paused — data is read-only.
+                Go to <button onClick={() => router.push('/workspaces')} className="underline hover:text-amber-300">Workspaces</button> to resume.
+              </span>
+            </div>
+          )}
+
           {/* ── Compact Header (48px Supabase-style) ── */}
           <header className="h-12 flex-shrink-0 flex items-center justify-between border-b border-[#1e2637] bg-[#0a0d14] px-4 z-20">
 
-            {/* Left: Org Switcher Breadcrumb */}
+            {/* Left: Org Switcher + Workspace Breadcrumb */}
             <div className="flex items-center gap-1.5 text-sm">
               <OrganizationSwitcher
                 hidePersonal
                 appearance={{
                   elements: {
-                    organizationSwitcherTrigger: "flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-[#2a3448] hover:bg-white/5 text-slate-300 hover:text-white transition-all text-xs font-medium",
-                    organizationPreviewMainIdentifier: "text-slate-200 text-xs font-medium",
+                    organizationSwitcherTrigger: "flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-[#2a3448] hover:bg-white/5 transition-all",
+                    organizationPreviewMainIdentifier: "text-white text-xs font-semibold",
                     organizationPreviewSecondaryIdentifier: "hidden",
                     organizationSwitcherTriggerIcon: "text-slate-500",
                   }
                 }}
               />
+              {activeWorkspace && (
+                <>
+                  <ChevronRight size={12} className="text-slate-600" />
+                  <button
+                    onClick={() => router.push('/workspaces')}
+                    className="text-xs font-medium text-slate-300 hover:text-white transition-colors px-1"
+                  >
+                    {activeWorkspace.name}
+                  </button>
+                  <ChevronRight size={12} className="text-slate-600" />
+                  <span className="text-xs text-slate-500">main</span>
+                </>
+              )}
             </div>
 
             {/* Center: Search */}
@@ -323,6 +372,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-3">
+              <Link href="/workspaces/new" className="hidden sm:flex flex-shrink-0 items-center gap-1.5 px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-md text-xs font-semibold transition-colors">
+                <Plus size={12} /> New Project
+              </Link>
+
               <CurrencySwitcher />
 
               <Link href="/dashboard/notifications" className="relative group p-1.5 rounded-md hover:bg-white/5 transition-colors">

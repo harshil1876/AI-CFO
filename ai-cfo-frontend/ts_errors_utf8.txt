@@ -1,0 +1,7 @@
+﻿src/app/dashboard/settings/workspace/page.tsx(200,36): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+src/app/dashboard/team-status/page.tsx(11,5): error TS2561: Object literal may only specify known properties, but 'membershipList' does not exist in type 'UseOrganizationParams'. Did you mean to write 'memberships'?
+src/app/dashboard/team-status/page.tsx(42,26): error TS18048: 'm.publicUserData' is possibly 'undefined'.
+src/app/dashboard/team-status/page.tsx(53,26): error TS18048: 'm.publicUserData' is possibly 'undefined'.
+src/app/dashboard/team-status/page.tsx(59,24): error TS18048: 'm.publicUserData' is possibly 'undefined'.
+src/app/dashboard/team-status/page.tsx(59,54): error TS18048: 'm.publicUserData' is possibly 'undefined'.
+src/app/dashboard/team-status/page.tsx(62,90): error TS18048: 'm.publicUserData' is possibly 'undefined'.

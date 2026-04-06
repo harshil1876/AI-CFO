@@ -1104,20 +1104,60 @@ def daily_briefing(request):
 
 class WorkspaceListCreateView(generics.ListCreateAPIView):
     """
-    List and create Workspaces for a specific overarching org_id (bot_id).
+    GET  /api/workspaces/?org_id=xxx&status=active&q=searchterm
+    POST /api/workspaces/  - create workspace (auto-hashes secure_key)
     """
     serializer_class = WorkspaceSerializer
 
     def get_queryset(self):
         org_id = self.request.query_params.get("org_id")
+        ws_status = self.request.query_params.get("status")
+        q = self.request.query_params.get("q", "")
         qs = Workspace.objects.all().order_by('-created_at')
         if org_id:
             qs = qs.filter(org_id=org_id)
+        if ws_status:
+            qs = qs.filter(status=ws_status)
+        else:
+            # Hide closed workspaces from main list by default
+            qs = qs.exclude(status=Workspace.STATUS_CLOSED)
+        if q:
+            qs = qs.filter(name__icontains=q)
         return qs
 
+
 class WorkspaceRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """Soft-deletes by setting status=closed instead of hard-deleting."""
     queryset = Workspace.objects.all()
     serializer_class = WorkspaceSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        workspace = self.get_object()
+        workspace.status = Workspace.STATUS_CLOSED
+        workspace.save()
+        return Response({'status': 'closed'}, status=status.HTTP_200_OK)
+
+
+@api_view(['PATCH'])
+def workspace_set_status(request, pk):
+    """
+    PATCH /api/workspaces/<id>/status/
+    Body: {"status": "active"|"paused"|"closed"}
+    Allows instant lifecycle transitions without going through full PATCH.
+    """
+    try:
+        workspace = Workspace.objects.get(pk=pk)
+    except Workspace.DoesNotExist:
+        return Response({'error': 'Workspace not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    new_status = request.data.get('status')
+    valid = [Workspace.STATUS_ACTIVE, Workspace.STATUS_PAUSED, Workspace.STATUS_CLOSED]
+    if new_status not in valid:
+        return Response({'error': 'Invalid status value'}, status=status.HTTP_400_BAD_REQUEST)
+
+    workspace.status = new_status
+    workspace.save()
+    return Response({'id': workspace.id, 'name': workspace.name, 'status': workspace.status})
 
 class GoalTargetListCreateView(generics.ListCreateAPIView):
     """

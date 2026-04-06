@@ -7,9 +7,8 @@ import { toast } from 'sonner';
 
 export default function TeamStatusPage() {
   const { user } = useUser();
-  const { organization, memberships, isLoaded } = useOrganization({
-    membershipList: { maxItems: 50 },
-  });
+  const { organization, memberships, isLoaded } = useOrganization();
+
 
   if (!isLoaded) {
     return (
@@ -39,7 +38,7 @@ export default function TeamStatusPage() {
       <div className="p-6 max-w-6xl w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {members.map((m) => {
-            const isMe = m.publicUserData.identifier === user?.primaryEmailAddress?.emailAddress;
+            const isMe = m.publicUserData?.identifier === user?.primaryEmailAddress?.emailAddress;
             const status = isMe ? "Online" : "Away";
             const lastActive = isMe ? "Just now" : "2 hours ago";
 
@@ -50,16 +49,16 @@ export default function TeamStatusPage() {
 
                 <div className="flex items-center gap-4 mb-5">
                   <img 
-                    src={m.publicUserData.imageUrl} 
+                    src={m.publicUserData?.imageUrl} 
                     alt="avatar" 
                     className="w-12 h-12 rounded-full border-2 border-[#1e2637]"
                   />
                   <div>
                     <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                      {m.publicUserData.firstName || m.publicUserData.identifier?.split('@')[0]}
+                      {m.publicUserData?.firstName || m.publicUserData?.identifier?.split('@')[0]}
                       {isMe && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400">You</span>}
                     </h3>
-                    <p className="text-xs text-slate-400 mt-0.5 truncate max-w-[150px]">{m.publicUserData.identifier}</p>
+                    <p className="text-xs text-slate-400 mt-0.5 truncate max-w-[150px]">{m.publicUserData?.identifier}</p>
                   </div>
                 </div>
 

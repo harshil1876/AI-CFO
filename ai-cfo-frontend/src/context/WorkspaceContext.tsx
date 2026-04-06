@@ -1,9 +1,19 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+interface WorkspaceMeta {
+  id: string;
+  name: string;
+  status: 'active' | 'paused' | 'closed';
+  currency: string;
+  region: string;
+}
+
 type WorkspaceContextType = {
   activeWorkspaceId: string | null;
+  activeWorkspace: WorkspaceMeta | null;
   setActiveWorkspaceId: (id: string | null) => void;
+  setActiveWorkspace: (ws: WorkspaceMeta | null) => void;
   isWorkspaceLoaded: boolean;
 };
 
@@ -11,13 +21,17 @@ const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefin
 
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [activeWorkspaceId, setActiveWorkspaceIdState] = useState<string | null>(null);
+  const [activeWorkspace, setActiveWorkspaceState] = useState<WorkspaceMeta | null>(null);
   const [isWorkspaceLoaded, setIsWorkspaceLoaded] = useState(false);
 
-  // Remember the last workspace the user accessed on mount
   useEffect(() => {
-    const saved = localStorage.getItem('last_workspace_id');
-    if (saved) {
-      setActiveWorkspaceIdState(saved);
+    const savedId = localStorage.getItem('last_workspace_id');
+    const savedMeta = localStorage.getItem('last_workspace_meta');
+    if (savedId) {
+      setActiveWorkspaceIdState(savedId);
+    }
+    if (savedMeta) {
+      try { setActiveWorkspaceState(JSON.parse(savedMeta)); } catch {}
     }
     setIsWorkspaceLoaded(true);
   }, []);
@@ -28,11 +42,28 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('last_workspace_id', id);
     } else {
       localStorage.removeItem('last_workspace_id');
+      localStorage.removeItem('last_workspace_meta');
+      setActiveWorkspaceState(null);
+    }
+  };
+
+  const setActiveWorkspace = (ws: WorkspaceMeta | null) => {
+    setActiveWorkspaceState(ws);
+    if (ws) {
+      localStorage.setItem('last_workspace_meta', JSON.stringify(ws));
+    } else {
+      localStorage.removeItem('last_workspace_meta');
     }
   };
 
   return (
-    <WorkspaceContext.Provider value={{ activeWorkspaceId, setActiveWorkspaceId, isWorkspaceLoaded }}>
+    <WorkspaceContext.Provider value={{
+      activeWorkspaceId,
+      activeWorkspace,
+      setActiveWorkspaceId,
+      setActiveWorkspace,
+      isWorkspaceLoaded,
+    }}>
       {children}
     </WorkspaceContext.Provider>
   );

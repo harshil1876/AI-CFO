@@ -537,19 +537,34 @@ class Workspace(models.Model):
     Sub-level isolation within a single Clerk Organization (bot_id).
     Allows an enterprise to have multiple isolated ledgers (e.g. US Branch, EU Branch).
     """
-    org_id = models.CharField(max_length=255, db_index=True)  # The overarching Clerk Org
-    name = models.CharField(max_length=255)
+    STATUS_ACTIVE  = 'active'
+    STATUS_PAUSED  = 'paused'
+    STATUS_CLOSED  = 'closed'
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, 'Active'),
+        (STATUS_PAUSED, 'Paused'),
+        (STATUS_CLOSED, 'Closed'),
+    ]
+
+    org_id      = models.CharField(max_length=255, db_index=True)  # Clerk Org ID
+    name        = models.CharField(max_length=255)
     entity_type = models.CharField(max_length=100, default='Corporate')
     description = models.TextField(blank=True, null=True)
-    currency = models.CharField(max_length=10, default='USD')
-    
-    # All lower-level resources should theoretically link to workspace_id moving forward,
-    # but for Sprint 15 MVP we will inject workspace_id as a contextual filter.
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    currency    = models.CharField(max_length=10, default='USD')
+    region      = models.CharField(max_length=100, default='Asia-Pacific')
+
+    # Sprint 16: full lifecycle status (replaces is_active boolean)
+    status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+
+    # Workspace isolation key (hashed, used for API-level RLS)
+    secure_key  = models.CharField(max_length=128, blank=True, default='')
+
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.name} (Org: {self.org_id})"
+        return f"{self.name} (Org: {self.org_id}) [{self.status}]"
+
 
 
 class GoalTarget(models.Model):

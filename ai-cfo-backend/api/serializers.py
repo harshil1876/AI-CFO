@@ -72,9 +72,22 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 
 class WorkspaceSerializer(serializers.ModelSerializer):
+    secure_key = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
     class Meta:
         model = Workspace
-        fields = '__all__'
+        fields = [
+            'id', 'org_id', 'name', 'entity_type', 'description',
+            'currency', 'region', 'status', 'secure_key', 'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        import hashlib, secrets
+        raw_key = validated_data.get('secure_key', '') or secrets.token_hex(16)
+        validated_data['secure_key'] = hashlib.sha256(raw_key.encode()).hexdigest()
+        return super().create(validated_data)
+
 
 
 class GoalTargetSerializer(serializers.ModelSerializer):

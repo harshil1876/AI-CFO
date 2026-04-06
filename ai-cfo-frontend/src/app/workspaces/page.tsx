@@ -253,30 +253,7 @@ export default function WorkspacesPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0d14] text-white">
-      {/* Top Nav */}
-      <header className="h-12 flex items-center gap-3 px-4 border-b border-[#1e2637] bg-[#0c0f17]">
-        <div className="flex items-center gap-2">
-          <img src="/Logo.png" alt="CFOlytics" className="h-5 w-5 object-contain" />
-          <span className="text-sm font-bold text-white">CFOlytics</span>
-        </div>
-        <ChevronRight size={12} className="text-slate-600" />
-        <OrganizationSwitcher
-          hidePersonal
-          appearance={{
-            elements: {
-              organizationSwitcherTrigger: 'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-all',
-              organizationPreviewMainIdentifier: 'text-slate-200 text-xs font-medium',
-              organizationPreviewSecondaryIdentifier: 'hidden',
-            }
-          }}
-        />
-        <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs text-slate-500">{user?.fullName || user?.firstName}</span>
-          <div className="h-7 w-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold">
-            {(user?.fullName || user?.firstName || 'U')[0].toUpperCase()}
-          </div>
-        </div>
-      </header>
+
 
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Page Header */}

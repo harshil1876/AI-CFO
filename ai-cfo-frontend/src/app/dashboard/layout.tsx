@@ -1,6 +1,7 @@
 "use client";
 import { useState, ReactNode, useEffect, useRef } from "react";
 import { useUser, useOrganization, UserButton, SignOutButton, OrganizationSwitcher } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useWorkspace } from "@/context/WorkspaceContext";
@@ -72,7 +73,6 @@ const NAV_GROUPS = [
     label: "SETTINGS",
     items: [
       { href: "/dashboard/settings/workspace", label: "Workspace Settings", icon: Settings },
-      { href: "/dashboard/settings/organization", label: "Organization Settings", icon: Settings },
     ],
   },
 ];
@@ -335,8 +335,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <OrganizationSwitcher
                 hidePersonal
                 appearance={{
+                  baseTheme: dark,
                   elements: {
-                    organizationSwitcherTrigger: "flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-[#2a3448] hover:bg-white/5 transition-all",
+                    organizationSwitcherTrigger: "flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-[#2a3448] hover:bg-white/5 transition-all text-white",
                     organizationPreviewMainIdentifier: "text-white text-xs font-semibold",
                     organizationPreviewSecondaryIdentifier: "hidden",
                     organizationSwitcherTriggerIcon: "text-slate-500",
@@ -401,7 +402,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     {organization?.name || customRole}
                   </button>
                 </div>
-                <UserButton appearance={{ elements: { avatarBox: "h-7 w-7" } }} />
+                <UserButton appearance={{ baseTheme: dark, elements: { avatarBox: "h-7 w-7 hover:ring-2 hover:ring-blue-500/50 transition-all font-sans" } }} />
               </div>
             </div>
           </header>

@@ -373,9 +373,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-3">
-              <Link href="/workspaces/new" className="hidden sm:flex flex-shrink-0 items-center gap-1.5 px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-md text-xs font-semibold transition-colors">
-                <Plus size={12} /> New Project
-              </Link>
+
 
               <CurrencySwitcher />
 

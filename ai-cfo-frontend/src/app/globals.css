@@ -143,3 +143,8 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* Force Clerk's Organization Switcher trigger text to be true white */
+.cl-organizationPreviewMainIdentifier {
+  color: #ffffff !important;
+}

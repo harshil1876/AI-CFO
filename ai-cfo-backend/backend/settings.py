@@ -26,12 +26,12 @@ load_dotenv(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-z#wpz6p-x-&lx)zes&(60c$-3)&px8cktk-qq^##w-aw%p=(49"
+SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 
 
 # Application definition
@@ -148,9 +148,13 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 # ──────────────────────────────────────────────
 # CORS Configuration (allows Next.js frontend)
 # ──────────────────────────────────────────────
+# CORS Configuration (Security)
+# ──────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://ai-cfo-app-b2cqdaedfvb0d7hp.centralindia-01.azurewebsites.net",
+    "https://ai-cfo-api.azurewebsites.net",
 ]
 
 # Allow credentials (cookies, auth headers)

@@ -1,0 +1,24 @@
+# Exclude non-project large folders
+Quickbots-AI-main/
+Test/
+image-analysis-smit-main/
+
+# Exclude standard dev noise
+.git/
+.antigravity/
+.antigravityignore
+.antigravitylogs/
+node_modules/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+
+# Exclude local uploads/logs
+ai-cfo-backend/uploads/
+ai-cfo-backend/logs/
+
+# Exclude front-end build artifacts from backend context
+ai-cfo-frontend/.next/
+ai-cfo-frontend/out/

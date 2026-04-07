@@ -1,86 +1,44 @@
-"""
-Sprint 6: Celery Tasks for Scheduled Auto-Import
-Celery beat schedules connectors to auto-sync on a cron basis.
-"""
-import logging
 from celery import shared_task
-from .models import DataSource
-from .connectors import get_connector
+from .models import Transaction, KPI, Anomaly
+import pandas as pd
+from django.db.models import Sum
 
-logger = logging.getLogger(__name__)
-
-
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def sync_data_source(self, source_id: int):
+@shared_task
+def run_analytics_task(bot_id: str, period: str):
     """
-    Celery task to sync a single DataSource by its ID.
-    Retries up to 3 times with a 60-second delay on failure.
+    Celery background task to calculate KPIs and detect anomalies.
+    Offloads heavy pandas calculations from the main Django thread.
     """
-    try:
-        ds = DataSource.objects.get(id=source_id, status='active')
-        connector = get_connector(ds)
-        log = connector.sync()
-        logger.info(
-            f"[Celery] Sync task complete for source_id={source_id}: "
-            f"{log.status} | {log.records_inserted} inserted"
-        )
-        return {
-            'source_id': source_id,
-            'status': log.status,
-            'inserted': log.records_inserted,
+    transactions = Transaction.objects.filter(bot_id=bot_id, date__startswith=period)
+    if not transactions.exists():
+        return f"No transactions for {period}"
+
+    df = pd.DataFrame(list(transactions.values()))
+    
+    # Calculate simple KPIs
+    revenue = df[df['type'] == 'credit']['amount'].sum() or 0
+    expenses = df[df['type'] == 'debit']['amount'].sum() or 0
+    net_profit = revenue - expenses
+    margin = (net_profit / revenue * 100) if revenue > 0 else 0
+
+    KPI.objects.update_or_create(
+        bot_id=bot_id, period=period,
+        defaults={
+            'total_revenue': revenue,
+            'total_expenses': expenses,
+            'net_profit': net_profit,
+            'profit_margin': margin,
+            'burn_rate': expenses,
+            'runway_months': (50000 / expenses) if expenses > 0 else 12 # mock capital 50k
         }
-    except DataSource.DoesNotExist:
-        logger.warning(f"[Celery] DataSource {source_id} not found or not active.")
-        return {'source_id': source_id, 'status': 'skipped'}
-    except Exception as exc:
-        logger.error(f"[Celery] Sync task failed for source_id={source_id}: {exc}")
-        raise self.retry(exc=exc)
+    )
 
+    return f"Analytics completed for {bot_id} - {period}. Net Profit: {net_profit}"
 
 @shared_task
-def sync_all_active_sources():
-    """
-    Celery beat task: runs every hour and queues a sync for every active DataSource.
-    Configure in settings.py CELERY_BEAT_SCHEDULE.
-    """
-    active_sources = DataSource.objects.filter(status='active').values_list('id', flat=True)
-    count = 0
-    for source_id in active_sources:
-        sync_data_source.delay(source_id)
-        count += 1
-    logger.info(f"[Celery] Queued {count} active connector sync tasks.")
-    return {'queued': count}
-
-@shared_task
-def email_monthly_pnl_reports():
-    """
-    Celery beat task to automatically generate and email the P&L summary
-    to the organization administrators on the 1st of every month.
-    """
-    from .services.reporting_logic import generate_pnl
-    from .models import Transaction
-    import datetime
-    
-    # Identify active bot_ids (organizations)
-    bot_ids = Transaction.objects.values_list('bot_id', flat=True).distinct()
-    
-    today = datetime.date.today()
-    first_of_this_month = today.replace(day=1)
-    last_day_last_month = first_of_this_month - datetime.timedelta(days=1)
-    first_day_last_month = last_day_last_month.replace(day=1)
-    
-    start = first_day_last_month.strftime('%Y-%m-%d')
-    end = last_day_last_month.strftime('%Y-%m-%d')
-    
-    count = 0
-    for bot_id in bot_ids:
-        try:
-            pnl_data = generate_pnl(bot_id, start_date=start, end_date=end)
-            net_income = pnl_data.get('NetIncome', 0)
-            logger.info(f"Generated P&L for {bot_id} | Net Income: {net_income} | Dispatching to SendGrid.")
-            # TODO: Integrate django.core.mail.send_mail logic here
-            count += 1
-        except Exception as e:
-            logger.error(f"Failed to generate email report for {bot_id}: {str(e)}")
-            
-    return {'emails_sent': count}
+def generate_forecast_task(bot_id: str, months: int):
+    """Placeholder for Prophet AI forecasting running async."""
+    # Simulation of heavy ML task
+    import time
+    time.sleep(3)
+    return f"Forecasted {months} months for {bot_id}"

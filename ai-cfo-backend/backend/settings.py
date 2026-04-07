@@ -52,6 +52,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "api.middleware.clerk_auth.ClerkAuthMiddleware",
+    "api.middleware.db_session.TenantSessionMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -171,14 +172,25 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # ─────────────────────────────────────────────────────
-# Sprint 6: Celery Configuration (Task Queue)
+# Sprint 6/17: Celery Configuration (Task Queue with Upstash Redis)
 # ─────────────────────────────────────────────────────
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Kolkata'
+
+# Upstash requires SSL configuration for rediss://
+if REDIS_URL.startswith('rediss'):
+    CELERY_BROKER_USE_SSL = {
+        'ssl_cert_reqs': 'CERT_NONE'
+    }
+    CELERY_REDIS_BACKEND_USE_SSL = {
+        'ssl_cert_reqs': 'CERT_NONE'
+    }
 
 from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {

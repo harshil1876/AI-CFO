@@ -607,3 +607,22 @@ class OrgChatMessage(models.Model):
 
     def __str__(self):
         return f"Message from {self.user_name} at {self.created_at}"
+
+class DeveloperAPIKey(models.Model):
+    """
+    API Keys for Developer Platform integration (external ingress).
+    """
+    bot_id = models.CharField(max_length=255, db_index=True)
+    workspace_id = models.CharField(max_length=255, blank=True, null=True)
+    
+    name = models.CharField(max_length=100) # e.g., "Zapier Integration"
+    prefix = models.CharField(max_length=15) # e.g., "cfo_live"
+    # In a real system, the actual key is hashed, and only the first/last chars are kept
+    hashed_key = models.CharField(max_length=128)
+    is_active = models.BooleanField(default=True)
+    last_used = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.prefix}...)"

@@ -28,6 +28,7 @@ from .views import (
     # Sprint 17: New endpoints
     update_transaction_status, usage_metrics,
 )
+from .v1_views import ingest_transactions, fetch_kpis
 
 urlpatterns = [
     # Sprint 1: Flexible File Upload
@@ -106,4 +107,8 @@ urlpatterns = [
     # Sprint 17: Transaction Review & Usage Metrics
     path('transactions/<int:transaction_id>/status/', update_transaction_status, name='transaction-status-update'),
     path('usage/', usage_metrics, name='usage-metrics'),
+
+    # Sprint 17 Extended: Developer API Platform
+    path('v1/transactions/', ingest_transactions, name='v1-ingest-transactions'),
+    path('v1/kpis/', fetch_kpis, name='v1-fetch-kpis'),
 ]

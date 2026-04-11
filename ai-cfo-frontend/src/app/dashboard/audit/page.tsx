@@ -57,7 +57,7 @@ export default function AuditTrailPage() {
     try {
       const token = await getToken();
       const res = await fetch(
-        `https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api/audit/?bot_id=${botId}&page=${pageNum}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/audit/?bot_id=${botId}&page=${pageNum}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -84,7 +84,7 @@ export default function AuditTrailPage() {
     try {
       const token = await getToken();
       const res = await fetch(
-        `https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api/audit/export/?bot_id=${botId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/audit/export/?bot_id=${botId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

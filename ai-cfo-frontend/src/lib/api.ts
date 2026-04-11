@@ -4,7 +4,7 @@
  * All requests include Clerk JWT Bearer token for authentication.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 /**
  * Get auth headers with Clerk Bearer token.

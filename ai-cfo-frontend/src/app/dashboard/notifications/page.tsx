@@ -57,7 +57,7 @@ export default function NotificationsPage() {
         setIsLoading(true);
         try {
             const token = await getToken();
-            const res = await fetch(`https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api/notifications/?bot_id=${botId}`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/?bot_id=${botId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (res.ok) {

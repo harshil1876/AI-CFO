@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // ─── Connector Definitions ────────────────────────────────────────────────────
 const CONNECTOR_CATALOG = [

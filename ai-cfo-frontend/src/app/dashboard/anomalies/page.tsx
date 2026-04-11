@@ -73,7 +73,7 @@ export default function AnomalyHubPage() {
     setIsLoading(true);
     try {
       const token = await getToken();
-      const res = await fetch(`https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api/anomalies/?bot_id=${botId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/anomalies/?bot_id=${botId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -91,7 +91,7 @@ export default function AnomalyHubPage() {
     try {
       const token = await getToken();
       const res = await fetch(
-        `https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api/anomalies/${anomalyId}/comments/?bot_id=${botId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/anomalies/${anomalyId}/comments/?bot_id=${botId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.ok) {
@@ -106,7 +106,7 @@ export default function AnomalyHubPage() {
   const updateStatus = async (anomalyId: number, newStatus: string) => {
     try {
       const token = await getToken();
-      await fetch(`https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api/anomalies/${anomalyId}/status/`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/anomalies/${anomalyId}/status/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -129,7 +129,7 @@ export default function AnomalyHubPage() {
     setSubmitting(anomalyId);
     try {
       const token = await getToken();
-      await fetch(`https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api/anomalies/${anomalyId}/comments/`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/anomalies/${anomalyId}/comments/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

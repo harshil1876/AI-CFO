@@ -46,7 +46,7 @@ export default function FileUpload({ botId, onUploadComplete }: FileUploadProps)
                    try {
                        const { getAuthHeaders } = await import("@/lib/api");
                        const headers = await getAuthHeaders();
-                       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+                       const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api";
                        const period = new Date().toISOString().slice(0, 7);
                        // 1. Run Analytics (KPIs & Anomalies)
                        await fetch(`${API_URL}/analytics/run/`, {

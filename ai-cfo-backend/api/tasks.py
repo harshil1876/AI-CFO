@@ -1,6 +1,5 @@
 from celery import shared_task
 from .models import Transaction, KPI, Anomaly
-import pandas as pd
 from django.db.models import Sum
 
 @shared_task
@@ -9,6 +8,7 @@ def run_analytics_task(bot_id: str, period: str):
     Celery background task to calculate KPIs and detect anomalies.
     Offloads heavy pandas calculations from the main Django thread.
     """
+    import pandas as pd
     transactions = Transaction.objects.filter(bot_id=bot_id, date__startswith=period)
     if not transactions.exists():
         return f"No transactions for {period}"

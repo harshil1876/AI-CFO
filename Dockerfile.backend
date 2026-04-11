@@ -22,5 +22,5 @@ COPY ai-cfo-backend/ /app/
 
 EXPOSE 8000
 
-# Use Gunicorn for production
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "backend.wsgi:application"]
+# Use Gunicorn for production with a larger timeout and memory preloading
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--timeout", "300", "--workers", "2", "--preload", "--max-requests", "500", "--max-requests-jitter", "50", "backend.wsgi:application"]

@@ -10,8 +10,9 @@ class TenantSessionMiddleware:
 
     def __call__(self, request):
         # We assume the bot_id is added to request.user by the authentication middleware (Clerk or DeveloperAPIKey).
-        # In this mock up, we try to safely grab it.
-        bot_id = getattr(request.user, 'bot_id', None)
+        # We safely grab it, as some requests (like health probes) might not have a .user object mapped at all yet.
+        user = getattr(request, 'user', None)
+        bot_id = getattr(user, 'bot_id', None) if user else None
         
         if bot_id:
             with connection.cursor() as cursor:

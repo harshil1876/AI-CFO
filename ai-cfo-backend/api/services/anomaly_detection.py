@@ -5,9 +5,6 @@ Runs per bot_id to maintain multi-tenant isolation.
 """
 import logging
 from decimal import Decimal
-import pandas as pd
-import numpy as np
-from sklearn.ensemble import IsolationForest
 from api.models import Transaction, AnomalyLog
 
 logger = logging.getLogger(__name__)
@@ -24,6 +21,9 @@ def detect_anomalies(bot_id: str, contamination: float = 0.05) -> list:
     Returns:
         A list of anomaly dictionaries with details about flagged transactions.
     """
+    import pandas as pd
+    import numpy as np
+    from sklearn.ensemble import IsolationForest
     transactions = Transaction.objects.filter(bot_id=bot_id).values(
         "id", "date", "amount", "category", "description"
     )

@@ -1,9 +1,27 @@
 "use client";
 
-import { OrganizationProfile } from "@clerk/nextjs";
+import { OrganizationProfile, useOrganization, CreateOrganization } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 
 export default function WorkspacesTeamPage() {
+  const { organization, isLoaded } = useOrganization();
+
+  if (!isLoaded) {
+    return <div className="p-8 text-slate-400">Loading team data...</div>;
+  }
+
+  if (!organization) {
+    return (
+      <div className="w-full h-full flex flex-col p-8 items-center justify-center bg-[#0a0d14] overflow-y-auto">
+        <h2 className="text-2xl font-bold text-white mb-2">Create an Organization</h2>
+        <p className="text-slate-400 mb-8 max-w-lg text-center text-sm">
+          You must have an active organization to manage team members. Please create one below or select an existing one.
+        </p>
+        <CreateOrganization routing="hash" appearance={{ baseTheme: dark }} />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full flex flex-col p-8 bg-[#0a0d14] overflow-y-auto">
       <div className="max-w-6xl w-full mx-auto">

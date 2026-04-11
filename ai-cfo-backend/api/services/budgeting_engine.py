@@ -1,6 +1,4 @@
-import numpy as np
-import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from django.db.models import Sum
 from api.models import Transaction, Budget
@@ -81,6 +79,8 @@ def run_monte_carlo_simulation(bot_id, months_to_project=12, num_simulations=100
     Uses Numpy to run Monte Carlo simulations on historical transactions
     to predict future cash flow percentiles (10th, 50th, 90th).
     """
+    import numpy as np
+    import pandas as pd
     # 1. Fetch historical monthly expenses
     twelve_months_ago = datetime.now() - relativedelta(months=12)
     transactions = Transaction.objects.filter(

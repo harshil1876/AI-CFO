@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { OrganizationProfile, useOrganization, useUser, useAuth } from '@clerk/nextjs';
+import { OrganizationProfile, useOrganization, useUser, useAuth, CreateOrganization } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
 import {
   Building2, ChevronRight, Shield, CreditCard,
@@ -150,29 +150,39 @@ export default function OrganizationSettingsPage() {
             </div>
           </div>
           <div className="p-4">
-            <OrganizationProfile
-              routing="hash"
-              appearance={{
-                baseTheme: dark,
-                elements: {
-                  rootBox: 'w-full shadow-none rounded-xl bg-[#121622] border-0',
-                  card: 'w-full max-w-none shadow-none bg-[#121622]',
-                  navbar: 'border-r border-[#1e2637]',
-                  navbarButton: 'text-slate-400 hover:text-white hover:bg-[#1e2637]',
-                  headerTitle: 'text-white text-lg font-bold',
-                  headerSubtitle: 'text-slate-400 text-sm',
-                  profileSectionTitleText: 'text-white font-semibold text-base border-b border-[#1e2637] pb-2 mb-4',
-                  tableHead: 'text-slate-500 border-b border-[#1e2637]',
-                  tableRow: 'border-b border-[#1e2637] hover:bg-[#161b28]',
-                  userPreviewSecondaryIdentifier: 'text-slate-500',
-                  badge: 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5',
-                  primaryButton: 'bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg text-sm',
-                  secondaryButton: 'bg-[#1e2637] hover:bg-[#2a3441] text-slate-200 border border-[#2a3441] rounded-lg',
-                  formFieldLabel: 'text-slate-400 font-medium text-xs uppercase tracking-wider',
-                  formFieldInput: 'bg-[#0c0f17] border border-[#2a3441] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500',
-                },
-              }}
-            />
+            {!organization ? (
+              <div className="py-8 flex flex-col items-center text-center">
+                <p className="text-slate-400 mb-4 text-sm">You must create or select an organization to view profiles and members.</p>
+                {/* Use the standard Clerk create org UI */}
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <CreateOrganization routing="hash" appearance={{ baseTheme: dark }} />
+                </div>
+              </div>
+            ) : (
+              <OrganizationProfile
+                routing="hash"
+                appearance={{
+                  baseTheme: dark,
+                  elements: {
+                    rootBox: 'w-full shadow-none rounded-xl bg-[#121622] border-0',
+                    card: 'w-full max-w-none shadow-none bg-[#121622]',
+                    navbar: 'border-r border-[#1e2637]',
+                    navbarButton: 'text-slate-400 hover:text-white hover:bg-[#1e2637]',
+                    headerTitle: 'text-white text-lg font-bold',
+                    headerSubtitle: 'text-slate-400 text-sm',
+                    profileSectionTitleText: 'text-white font-semibold text-base border-b border-[#1e2637] pb-2 mb-4',
+                    tableHead: 'text-slate-500 border-b border-[#1e2637]',
+                    tableRow: 'border-b border-[#1e2637] hover:bg-[#161b28]',
+                    userPreviewSecondaryIdentifier: 'text-slate-500',
+                    badge: 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5',
+                    primaryButton: 'bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg text-sm',
+                    secondaryButton: 'bg-[#1e2637] hover:bg-[#2a3441] text-slate-200 border border-[#2a3441] rounded-lg',
+                    formFieldLabel: 'text-slate-400 font-medium text-xs uppercase tracking-wider',
+                    formFieldInput: 'bg-[#0c0f17] border border-[#2a3441] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500',
+                  },
+                }}
+              />
+            )}
           </div>
         </div>
 

@@ -31,7 +31,7 @@ export default function TeamPermissionsPage() {
       const member = memberships?.data?.find(m => m.publicUserData?.userId === currentUserId);
       const orgRole = member?.role || "org:admin"; 
 
-      const res = await fetch(`http://127.0.0.1:8000/api/team/permissions/?bot_id=${botId}`, {
+      const res = await fetch(`https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api/team/permissions/?bot_id=${botId}`, {
         headers: {
           "Authorization": `Bearer ${token}`,
           "X-User-Id": currentUserId || "",
@@ -63,7 +63,7 @@ export default function TeamPermissionsPage() {
       const member = memberships?.data?.find(m => m.publicUserData?.userId === currentUserId);
       const orgRole = member?.role || "org:admin";
 
-      const res = await fetch(`http://127.0.0.1:8000/api/team/permissions/update/`, {
+      const res = await fetch(`https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api/team/permissions/update/`, {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",

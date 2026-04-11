@@ -44,7 +44,7 @@ export default function ReportsPage() {
     try {
       const token = await getToken();
       
-      let url = `http://127.0.0.1:8000/api/reports/${activeTab}/?bot_id=${bot_id}`;
+      let url = `https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api/reports/${activeTab}/?bot_id=${bot_id}`;
       if (activeTab === "balancesheet") {
         url += `&target_date=${endDate}`;
       } else {
@@ -79,7 +79,7 @@ export default function ReportsPage() {
     setIsExporting(true);
     try {
       const token = await getToken();
-      let url = `http://127.0.0.1:8000/api/reports/export/?bot_id=${bot_id}&type=${activeTab}`;
+      let url = `https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api/reports/export/?bot_id=${bot_id}&type=${activeTab}`;
       if (activeTab === "balancesheet") {
         url += `&end_date=${endDate}`;
       } else {

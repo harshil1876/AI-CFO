@@ -6,7 +6,7 @@ import { getAuthHeaders } from "@/lib/api";
 import { Activity, Database, FileUp, RefreshCw, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ai-cfo-api-ehckcffwdxbug5eg.centralindia-01.azurewebsites.net/api";
 
 type UsageData = {
   file_uploads: number;

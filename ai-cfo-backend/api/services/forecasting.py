@@ -6,8 +6,6 @@ Runs per bot_id to maintain multi-tenant isolation.
 import logging
 from decimal import Decimal
 from datetime import datetime, timedelta
-import pandas as pd
-from prophet import Prophet
 from api.models import Transaction, ForecastResult
 
 logger = logging.getLogger(__name__)
@@ -24,6 +22,8 @@ def run_revenue_forecast(bot_id: str, periods: int = 6) -> list:
     Returns:
         A list of forecast dictionaries with date, predicted value, and bounds.
     """
+    import pandas as pd
+    from prophet import Prophet
     # Fetch historical transaction data (revenue = positive amounts)
     transactions = Transaction.objects.filter(
         bot_id=bot_id,

@@ -28,7 +28,6 @@ from .services.chat_service import chat_with_cfo
 from .services.simulation_engine import run_simulation
 from .services.alert_service import check_and_send_alerts
 from .services.budgeting_engine import calculate_variance, run_monte_carlo_simulation
-import pandas as pd
 
 
 # ──────────────────────────────────────────────
@@ -533,6 +532,7 @@ def upload_budget(request):
         return Response({"error": "bot_id and file are required"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
+        import pandas as pd
         df = pd.read_excel(file_obj)
         # Process expected columns
         required_cols = {'category', 'allocated_amount', 'month_year'}
@@ -785,12 +785,11 @@ def notifications_list(request):
 # Sprint 10: Financial Reporting & Dashboards
 # =====================================================
 
-from api.services.reporting_logic import generate_pnl, generate_cashflow, generate_balancesheet
-import pandas as pd
 from django.http import HttpResponse
 
 @api_view(['GET'])
 def report_pnl(request):
+    from api.services.reporting_logic import generate_pnl
     bot_id = request.query_params.get('bot_id')
     start_date = request.query_params.get('start_date')
     end_date = request.query_params.get('end_date')
@@ -803,6 +802,7 @@ def report_pnl(request):
 
 @api_view(['GET'])
 def report_cashflow(request):
+    from api.services.reporting_logic import generate_cashflow
     bot_id = request.query_params.get('bot_id')
     start_date = request.query_params.get('start_date')
     end_date = request.query_params.get('end_date')
@@ -815,6 +815,7 @@ def report_cashflow(request):
 
 @api_view(['GET'])
 def report_balancesheet(request):
+    from api.services.reporting_logic import generate_balancesheet
     bot_id = request.query_params.get('bot_id')
     target_date = request.query_params.get('target_date')
 
@@ -829,6 +830,8 @@ def report_export_excel(request):
     """
     Generates an Excel document for the requested report type using pandas.
     """
+    from api.services.reporting_logic import generate_pnl, generate_cashflow, generate_balancesheet
+    import pandas as pd
     bot_id = request.query_params.get('bot_id')
     report_type = request.query_params.get('type')  # pnl, cashflow, balancesheet
     start_date = request.query_params.get('start_date')

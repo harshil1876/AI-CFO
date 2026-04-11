@@ -127,7 +127,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Kolkata"
 
 USE_I18N = True
 
@@ -142,22 +142,13 @@ STATIC_URL = "static/"
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Allow local development hosts
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+# Allow local development hosts (removed to allow Azure hosts)
 
-# ──────────────────────────────────────────────
-# CORS Configuration (allows Next.js frontend)
-# ──────────────────────────────────────────────
 # CORS Configuration (Security)
 # ──────────────────────────────────────────────
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://ai-cfo-app-b2cqdaedfvb0d7hp.centralindia-01.azurewebsites.net",
-    "https://ai-cfo-api.azurewebsites.net",
-]
-
-# Allow credentials (cookies, auth headers)
+# We allow all origins to eliminate 'Network Error' browser restrictions.
+# This is safe because every request is strictly authenticated via Clerk JWT Bearer tokens anyway.
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 # Allow all standard headers + custom headers

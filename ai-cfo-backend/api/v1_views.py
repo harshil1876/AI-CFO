@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .auth import DeveloperAPIKeyAuthentication
-from .models import Transaction, KPI
+from .models import Transaction, KPISnapshot
 
 @api_view(['POST'])
 @authentication_classes([DeveloperAPIKeyAuthentication])
@@ -51,7 +51,7 @@ def fetch_kpis(request):
     Pull metrics to display inside building-company's own internal dashboards.
     """
     bot_id = request.user.bot_id
-    kpis = KPI.objects.filter(bot_id=bot_id).order_by('-period')[:12]
+    kpis = KPISnapshot.objects.filter(bot_id=bot_id).order_by('-period')[:12]
     
     data = [
         {

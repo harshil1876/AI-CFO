@@ -12,11 +12,8 @@ import time
 from decimal import Decimal
 from datetime import datetime
 from pathlib import Path
-
-import pandas as pd
 from django.conf import settings
 from django.utils import timezone
-
 from api.models import UploadedFile, ParsedRecord
 
 logger = logging.getLogger(__name__)
@@ -128,8 +125,9 @@ def process_file(upload_id: int) -> dict:
         return {"status": "failed", "error": str(e)}
 
 
-def _read_file_to_dataframe(upload: UploadedFile) -> pd.DataFrame:
+def _read_file_to_dataframe(upload: UploadedFile):
     """Read any supported file format into a pandas DataFrame."""
+    import pandas as pd
     file_path = upload.file_path
     ext = upload.file_type.lower()
 
@@ -150,11 +148,11 @@ def _read_file_to_dataframe(upload: UploadedFile) -> pd.DataFrame:
         return None
 
 
-def _detect_schema(df: pd.DataFrame) -> dict:
+def _detect_schema(df) -> dict:
     """
     Auto-detect column types and sample values from a DataFrame.
-    This is the local pre-processing step — no API call needed.
     """
+    import pandas as pd
     schema = {"columns": []}
 
     for col in df.columns:
@@ -192,11 +190,11 @@ def _detect_schema(df: pd.DataFrame) -> dict:
     return schema
 
 
-def _generate_ai_summary(df: pd.DataFrame, schema: dict, filename: str) -> str:
+def _generate_ai_summary(df, schema: dict, filename: str) -> str:
     """
     Use Gemini to generate an intelligent summary of the uploaded data.
-    Falls back to a local summary if Gemini is unavailable.
     """
+    import pandas as pd
     # Build a concise data preview for Gemini
     preview_rows = df.head(5).to_string(index=False)
     stats = df.describe(include="all").to_string()
@@ -241,8 +239,9 @@ Keep your response under 300 words."""
         return _local_summary_fallback(df, schema, filename)
 
 
-def _local_summary_fallback(df: pd.DataFrame, schema: dict, filename: str) -> str:
+def _local_summary_fallback(df, schema: dict, filename: str) -> str:
     """Generate a basic summary without any API call."""
+    import pandas as pd
     monetary_cols = [c["name"] for c in schema["columns"] if c["semantic_type"] == "monetary"]
     date_cols = [c["name"] for c in schema["columns"] if c["semantic_type"] == "datetime"]
 
@@ -275,8 +274,9 @@ def _local_summary_fallback(df: pd.DataFrame, schema: dict, filename: str) -> st
     return "\n".join(summary_parts)
 
 
-def _store_parsed_records(df: pd.DataFrame, upload: UploadedFile):
+def _store_parsed_records(df, upload: UploadedFile):
     """Store all DataFrame rows as flexible ParsedRecord entries."""
+    import pandas as pd
     records = []
     for idx, row in df.iterrows():
         # Convert row to dict, handling non-serializable types

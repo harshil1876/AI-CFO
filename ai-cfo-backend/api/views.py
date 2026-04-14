@@ -7,7 +7,8 @@ from .models import (
     Transaction, DepartmentData,
     KPISnapshot, ForecastResult, AnomalyLog, Recommendation,
     DataSource, ConnectorSyncLog, Budget, PurchaseOrder, Invoice, NotificationMeta,
-    Workspace, GoalTarget, OrgChatMessage
+    Workspace, GoalTarget, OrgChatMessage,
+    InvoiceThread, InboundEmailLog
 )
 from django.utils import timezone
 from .serializers import (
@@ -1256,3 +1257,226 @@ class OrgChatMessageListCreateView(generics.ListCreateAPIView):
         if org_id:
             qs = qs.filter(org_id=org_id)
         return qs[:limit]
+
+
+# =====================================================
+# Sprint 18: Invoice Workspace (Contextual Chat Threads)
+# =====================================================
+
+@api_view(['GET', 'POST'])
+def invoice_threads(request, invoice_id):
+    """
+    GET  /api/invoices/<id>/threads/  — list all thread messages on an invoice
+    POST /api/invoices/<id>/threads/  — post a new message to the invoice workspace
+    Body: { bot_id, user_id, user_email, user_name, message }
+    Mentions: detected automatically from @email patterns in the message text.
+    """
+    import re
+    try:
+        invoice = Invoice.objects.get(pk=invoice_id)
+    except Invoice.DoesNotExist:
+        return Response({'error': 'Invoice not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        threads = InvoiceThread.objects.filter(invoice=invoice).order_by('created_at')
+        return Response([{
+            'id': t.id,
+            'user_id': t.user_id,
+            'user_email': t.user_email,
+            'user_name': t.user_name or t.user_email,
+            'message': t.message,
+            'mentions': t.mentions,
+            'created_at': t.created_at.isoformat(),
+        } for t in threads])
+
+    # POST: create a new thread message
+    bot_id = request.data.get('bot_id', '')
+    user_id = request.data.get('user_id', '')
+    user_email = request.data.get('user_email', '')
+    user_name = request.data.get('user_name', '')
+    message = request.data.get('message', '').strip()
+
+    if not message or not user_email:
+        return Response({'error': 'message and user_email are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Auto-detect @mentions (patterns like @someone@company.com)
+    mention_pattern = r'@([\w.+-]+@[\w-]+\.[\w.]+)'
+    mentions = re.findall(mention_pattern, message)
+
+    thread = InvoiceThread.objects.create(
+        bot_id=bot_id,
+        invoice=invoice,
+        user_id=user_id,
+        user_email=user_email,
+        user_name=user_name,
+        message=message,
+        mentions=mentions,
+    )
+
+    # Fire notification to in-app notification system for @mentions
+    if mentions:
+        for mentioned_email in mentions:
+            AuditEvent.objects.create(
+                bot_id=bot_id,
+                user_id=user_id,
+                user_email=user_email,
+                action='INVOICE_MENTION',
+                resource_type='Invoice',
+                resource_id=str(invoice_id),
+                details=f'{user_name or user_email} mentioned {mentioned_email} on Invoice #{invoice_id}: "{message[:100]}"'
+            )
+
+    return Response({
+        'id': thread.id,
+        'user_email': thread.user_email,
+        'user_name': thread.user_name,
+        'message': thread.message,
+        'mentions': thread.mentions,
+        'created_at': thread.created_at.isoformat(),
+    }, status=status.HTTP_201_CREATED)
+
+
+# =====================================================
+# Sprint 18: VicInbox — Mailgun Email Webhook Handler
+# =====================================================
+
+@api_view(['POST'])
+def mailgun_inbound_webhook(request):
+    """
+    POST /api/ap/webhooks/mailgun-inbound/
+
+    Receives inbound email payloads from Mailgun's Inbound Routing.
+    Extracts PDF/image attachments and runs them through the Gemini
+    invoice processor automatically (Autopilot).
+
+    For local testing, you can POST a JSON body mimicking Mailgun's format:
+    {
+      "sender":     "vendor@example.com",
+      "recipient":  "invoices.org123@cfolytics.com",
+      "subject":    "Invoice #INV-2026-042",
+      "bot_id":     "org_...",          // only needed for mock/testing
+      "attachment-count": "1"           // Mailgun includes this
+    }
+    Real Mailgun webhooks include 'attachment-1' as a multipart file.
+    """
+    from .services.invoice_processor import process_invoice_document
+    import os, base64
+
+    sender = request.data.get('sender') or request.data.get('from', 'unknown@sender.com')
+    recipient = request.data.get('recipient', '')
+    subject = request.data.get('subject', '')
+
+    # Derive bot_id from recipient address (e.g. invoices.org_abc123@cfolytics.com -> org_abc123)
+    # For mock testing, accept explicit bot_id in payload
+    bot_id = request.data.get('bot_id', '')
+    if not bot_id and recipient:
+        # Parse: invoices.<bot_id>@cfolytics.com
+        local_part = recipient.split('@')[0]  # e.g. "invoices.org_abc"
+        parts = local_part.split('.', 1)
+        if len(parts) == 2:
+            bot_id = parts[1]
+
+    # Log the inbound email immediately
+    log = InboundEmailLog.objects.create(
+        bot_id=bot_id,
+        sender_email=sender,
+        subject=subject,
+        recipient=recipient,
+        raw_payload={
+            'sender': sender,
+            'recipient': recipient,
+            'subject': subject,
+            'attachment_count': request.data.get('attachment-count', 0),
+        },
+        status='processing',
+    )
+
+    # Check for file attachments
+    attachment = request.FILES.get('attachment-1') or request.FILES.get('file')
+
+    if not attachment:
+        log.status = 'no_attachment'
+        log.error_message = 'Email received but no PDF/image attachment found.'
+        log.save()
+        return Response({
+            'status': 'no_attachment',
+            'message': 'Email received but no invoice attachment found.',
+            'log_id': log.id,
+        }, status=status.HTTP_200_OK)
+
+    # Save the attachment temporarily
+    upload_dir = os.path.join('media', 'email_invoices')
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, f'email_{log.id}_{attachment.name}')
+
+    with open(file_path, 'wb+') as dest:
+        for chunk in attachment.chunks():
+            dest.write(chunk)
+
+    with open(file_path, 'rb') as f:
+        file_bytes = f.read()
+
+    mime_type = 'application/pdf'
+    if attachment.name.lower().endswith('.png'):
+        mime_type = 'image/png'
+    elif attachment.name.lower().endswith(('.jpg', '.jpeg')):
+        mime_type = 'image/jpeg'
+
+    if not bot_id:
+        log.status = 'failed'
+        log.error_message = 'Could not determine bot_id from recipient address. Send to invoices.<bot_id>@cfolytics.com'
+        log.save()
+        return Response({'error': 'Cannot determine workspace. Use invoices.<bot_id>@cfolytics.com as recipient.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Process through Gemini Vision invoice processor
+    result = process_invoice_document(bot_id, file_path, mime_type, file_bytes)
+
+    if 'error' in result:
+        log.status = 'failed'
+        log.error_message = result['error']
+        log.save()
+        return Response({'status': 'failed', 'error': result['error'], 'log_id': log.id}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # Link the created invoice back to the log
+    try:
+        invoice = Invoice.objects.get(pk=result['invoice_id'])
+        log.invoice = invoice
+    except Invoice.DoesNotExist:
+        pass
+
+    log.status = 'processed'
+    log.save()
+
+    return Response({
+        'status': 'processed',
+        'log_id': log.id,
+        'invoice_id': result.get('invoice_id'),
+        'vendor_name': result.get('vendor_name'),
+        'total_amount': result.get('total_amount'),
+        'autopilot_approved': result.get('autopilot_approved', False),
+        'fraud_score': result.get('fraud_score'),
+        'invoice_status': result.get('status'),
+        'message': f'Invoice from {sender} processed successfully via email ingestion.',
+    }, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+def email_inbox_logs(request):
+    """
+    GET /api/ap/email-logs/?bot_id=xxx
+    Lists inbound email processing history for a workspace.
+    """
+    bot_id = request.query_params.get('bot_id')
+    if not bot_id:
+        return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    logs = InboundEmailLog.objects.filter(bot_id=bot_id).order_by('-received_at')[:50]
+    return Response([{
+        'id': l.id,
+        'sender_email': l.sender_email,
+        'subject': l.subject,
+        'status': l.status,
+        'invoice_id': l.invoice.id if l.invoice else None,
+        'error_message': l.error_message,
+        'received_at': l.received_at.isoformat(),
+    } for l in logs])

@@ -513,3 +513,65 @@ class DeveloperAPIKey(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.prefix}...)"
+
+
+# =====================================================
+# Sprint 18: Invoice Workspace & Email Ingestion
+# =====================================================
+
+class InvoiceThread(models.Model):
+    """
+    Contextual discussion thread attached directly to a specific Invoice.
+    Enables the Stampli-style 'Invoice Workspace' where all team chat,
+    approvals, and comments are anchored to the financial document.
+    """
+    bot_id = models.CharField(max_length=255, db_index=True)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='threads')
+
+    user_id = models.CharField(max_length=255)       # Clerk User ID of the author
+    user_email = models.CharField(max_length=255)    # For display & @mention email alerts
+    user_name = models.CharField(max_length=255, blank=True, default='')
+
+    message = models.TextField()
+    # Stores list of mentioned user emails e.g. ["harshil@company.com"]
+    mentions = models.JSONField(default=list, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Thread by {self.user_email} on Invoice #{self.invoice.id}"
+
+
+class InboundEmailLog(models.Model):
+    """
+    Tracks every inbound email webhook event from Mailgun.
+    Each log entry represents one email that arrived and was parsed for invoice attachments.
+    """
+    STATUS_CHOICES = [
+        ('received', 'Received'),
+        ('processing', 'Processing'),
+        ('processed', 'Processed'),
+        ('failed', 'Failed'),
+        ('no_attachment', 'No Attachment'),
+    ]
+
+    bot_id = models.CharField(max_length=255, db_index=True, blank=True, default='')
+    sender_email = models.CharField(max_length=255)
+    subject = models.CharField(max_length=500, blank=True, default='')
+    recipient = models.CharField(max_length=255, blank=True, default='')  # e.g. invoices.workspace123@cfolytics.com
+
+    # Raw Mailgun payload for debugging
+    raw_payload = models.JSONField(default=dict, blank=True)
+
+    # Processing result
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='received')
+    invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='email_source')
+    error_message = models.TextField(blank=True, null=True)
+
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Email from {self.sender_email} [{self.status}] @ {self.received_at}"

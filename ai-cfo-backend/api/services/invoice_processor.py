@@ -110,7 +110,21 @@ def process_invoice_document(bot_id: str, file_path: str, mime_type: str, raw_by
                         # Auto-Approve if perfectly matched and no fraud!
                         status_code = "approved"
 
-        # 3. Create Model
+        # 3. Autopilot: Auto-approve low-risk invoices under the configured threshold
+        # Criteria: confidence score < 15%, no fraud flags, amount < $5,000
+        AUTOPILOT_AMOUNT_THRESHOLD = float(os.environ.get("AUTOPILOT_AMOUNT_THRESHOLD", "5000"))
+        autopilot_approved = False
+        if (
+            status_code == "pending_approval"
+            and fraud_score < 15
+            and len(flags) == 0
+            and float(total_amount) < AUTOPILOT_AMOUNT_THRESHOLD
+        ):
+            status_code = "approved"
+            autopilot_approved = True
+            logger.info(f"[Autopilot] Auto-approved invoice from {vendor_name} for ${total_amount} (fraud_score={fraud_score})")
+
+        # 4. Create Model
         invoice = Invoice.objects.create(
             bot_id=bot_id,
             vendor_name=vendor_name,
@@ -138,6 +152,7 @@ def process_invoice_document(bot_id: str, file_path: str, mime_type: str, raw_by
             "fraud_score": invoice.fraud_confidence_score,
             "fraud_flags": invoice.fraud_flags,
             "status": invoice.status,
+            "autopilot_approved": autopilot_approved,
             "gl_code": invoice.gl_code,
             "matched_po": matched_po.po_number if matched_po else None,
             "line_items": invoice.line_items,

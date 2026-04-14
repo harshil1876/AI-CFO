@@ -27,6 +27,8 @@ from .views import (
     workspace_set_status,
     # Sprint 17: New endpoints
     update_transaction_status, usage_metrics,
+    # Sprint 18: Invoice Workspace & Email Ingestion
+    invoice_threads, mailgun_inbound_webhook, email_inbox_logs,
 )
 from .v1_views import ingest_transactions, fetch_kpis
 
@@ -111,4 +113,13 @@ urlpatterns = [
     # Sprint 17 Extended: Developer API Platform
     path('v1/transactions/', ingest_transactions, name='v1-ingest-transactions'),
     path('v1/kpis/', fetch_kpis, name='v1-fetch-kpis'),
+
+    # Sprint 18: Invoice Workspace Threads
+    path('invoices/<int:invoice_id>/threads/', invoice_threads, name='invoice-threads'),
+
+    # Sprint 18: VicInbox — Mailgun Email Webhook
+    path('ap/webhooks/mailgun-inbound/', mailgun_inbound_webhook, name='mailgun-inbound-webhook'),
+
+    # Sprint 18: Email Inbox Processing Log
+    path('ap/email-logs/', email_inbox_logs, name='email-inbox-logs'),
 ]

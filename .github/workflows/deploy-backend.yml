@@ -9,7 +9,7 @@ on:
       - '.github/workflows/deploy-backend.yml'
 
 env:
-  AZURE_WEBAPP_NAME: ai-cfo-backend
+  AZURE_WEBAPP_NAME: ai-cfo-backend-prod
   PYTHON_VERSION: '3.11'
 
 jobs:

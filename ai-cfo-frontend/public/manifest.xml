@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+
+  <!-- Required: Unique identifier for this add-in. Generate a new GUID for production. -->
+  <Id>cfolytics-excel-addin-v1-00000001</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>CFOlytics</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="CFOlytics AI Finance"/>
+  <Description DefaultValue="Connect Microsoft Excel to the CFOlytics AI CFO Platform. Push live KPIs into your spreadsheet and sync Excel data back to the cloud."/>
+
+  <!-- Icon: Use your logo URL in production -->
+  <IconUrl DefaultValue="http://localhost:3000/Logo.png"/>
+  <HighResolutionIconUrl DefaultValue="http://localhost:3000/Logo.png"/>
+
+  <SupportUrl DefaultValue="http://localhost:3000/"/>
+
+  <!-- Must include Workbook host for Excel -->
+  <Hosts>
+    <Host Name="Workbook"/>
+  </Hosts>
+
+  <DefaultSettings>
+    <!-- The URL of your task pane (served by Next.js) -->
+    <SourceLocation DefaultValue="http://localhost:3000/excel-addin/taskpane"/>
+  </DefaultSettings>
+
+  <!-- Required permissions -->
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <!-- VersionOverrides for Excel taskpane ribbon integration -->
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Workbook">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="LearnMoreUrlAttribute.Url"/>
+          </GetStarted>
+          <FunctionFile resid="Commands.Url"/>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="CommandsGroup">
+                <Label resid="CommandsGroup.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16x16"/>
+                  <bt:Image size="32" resid="Icon.32x32"/>
+                  <bt:Image size="80" resid="Icon.80x80"/>
+                </Icon>
+                <Control xsi:type="Button" id="TaskpaneButton">
+                  <Label resid="TaskpaneButton.Label"/>
+                  <Supertip>
+                    <Title resid="TaskpaneButton.Label"/>
+                    <Description resid="TaskpaneButton.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16"/>
+                    <bt:Image size="32" resid="Icon.32x32"/>
+                    <bt:Image size="80" resid="Icon.80x80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ButtonId1</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16x16" DefaultValue="http://localhost:3000/Logo.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="http://localhost:3000/Logo.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="http://localhost:3000/Logo.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="http://localhost:3000/"/>
+        <bt:Url id="Commands.Url" DefaultValue="http://localhost:3000/excel-addin/commands"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="http://localhost:3000/excel-addin/taskpane"/>
+        <bt:Url id="LearnMoreUrlAttribute.Url" DefaultValue="http://localhost:3000/"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GetStarted.Title" DefaultValue="CFOlytics AI Finance"/>
+        <bt:String id="CommandsGroup.Label" DefaultValue="CFOlytics"/>
+        <bt:String id="TaskpaneButton.Label" DefaultValue="Open CFOlytics"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="Connect your spreadsheet to live financial intelligence."/>
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Open the CFOlytics AI Finance task pane."/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

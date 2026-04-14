@@ -11,7 +11,7 @@ import {
   Bell, Search, LogOut, Shield, AlertTriangle,
   History, BarChart, ChevronDown, Settings, Users,
   PanelLeft, PanelLeftClose, BrainCircuit, ChevronRight, Pause, Plus,
-  Ruler, Database
+  Ruler, Database, FileSpreadsheet
 } from "lucide-react";
 import { getAuthHeaders } from "@/lib/api";
 import { CurrencyProvider, useCurrency } from "@/context/CurrencyContext";
@@ -76,6 +76,7 @@ const NAV_GROUPS = [
     label: "SETTINGS",
     items: [
       { href: "/dashboard/settings/workspace", label: "Workspace Settings", icon: Settings },
+      { href: "/dashboard/excel-setup", label: "Excel Add-in", icon: FileSpreadsheet },
     ],
   },
 ];

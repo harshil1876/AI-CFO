@@ -145,6 +145,8 @@ export default function TeamPermissionsPage() {
         </div>
       </div>
 
+      {/* Main Content Wrapper */}
+      <div className="flex-1 p-6 lg:p-8 flex flex-col gap-6">
       {/* Permissions Matrix */}
       <div className="bg-[#0f172a] rounded-xl border border-white/5 overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
@@ -238,6 +240,7 @@ export default function TeamPermissionsPage() {
       <p className="text-slate-500 text-sm italic mt-4 text-center block">
         Note: Changes are applied instantly. Organization Admins permanently possess all capabilities.
       </p>
+      </div>
     </div>
   );
 }

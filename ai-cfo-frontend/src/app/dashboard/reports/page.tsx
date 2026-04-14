@@ -200,6 +200,8 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      {/* Main Content Wrapper */}
+      <div className="flex-1 p-6 lg:p-8 flex flex-col gap-8">
       {/* 2. Controls & Tabs */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 print:hidden">
         
@@ -362,6 +364,7 @@ export default function ReportsPage() {
           )}
 
         </div>
+      </div>
       </div>
     </div>
   );

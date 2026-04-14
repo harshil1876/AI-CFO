@@ -17,6 +17,15 @@ const CURRENCIES  = ['USD', 'EUR', 'GBP', 'INR', 'SGD', 'AED', 'JPY'];
 const ENTITY_TYPES = ['Corporate', 'Subsidiary', 'LLC', 'Branch', 'Division', 'Personal'];
 const TIMEZONES   = ['Asia/Kolkata', 'UTC', 'America/New_York', 'America/Los_Angeles', 'Europe/London', 'Asia/Singapore', 'Asia/Dubai'];
 
+const SETTINGS_TABS = [
+  { id: 'general', label: 'General', icon: Briefcase },
+  { id: 'connectors', label: 'Data Connectors', icon: Link2 },
+  { id: 'ai', label: 'AI Preferences', icon: Brain },
+  { id: 'goals', label: 'Goals & Targets', icon: Target },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'danger', label: 'Danger Zone', icon: AlertTriangle, danger: true },
+];
+
 // ── Section Wrapper ───────────────────────────────────────────
 function Section({ title, subtitle, icon: Icon, iconColor = 'text-blue-400', iconBg = 'bg-blue-500/10 border-blue-500/20', children, footer }: any) {
   return (
@@ -74,6 +83,7 @@ export default function WorkspaceSettingsPage() {
   const { orgId, userId } = useAuth();
   const router = useRouter();
 
+  const [activeTab, setActiveTab]         = useState('general');
   const [workspace, setWorkspace]         = useState<any>(null);
   const [name, setName]                   = useState('');
   const [currency, setCurrency]           = useState('USD');
@@ -273,9 +283,32 @@ export default function WorkspaceSettingsPage() {
         </div>
       </div>
 
-      <div className="p-6 max-w-4xl space-y-6">
+      <div className="flex-1 flex flex-col md:flex-row px-4 md:px-6 py-6 md:py-8 max-w-[1200px] w-full gap-6 md:gap-10">
+        {/* Left Sidebar Menu */}
+        <div className="w-full md:w-64 flex-shrink-0 space-y-1 print:hidden">
+          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3 px-3">Configure</div>
+          {SETTINGS_TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer outline-none ${
+                activeTab === tab.id
+                  ? (tab.danger ? 'bg-red-500/10 text-red-500' : 'bg-[#1e2637] text-white shadow-sm border border-slate-700/50')
+                  : (tab.danger ? 'text-red-400/80 hover:text-red-400 hover:bg-white/5' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5')
+              }`}
+            >
+              <tab.icon size={16} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Right Content Area */}
+        <div className="flex-1 max-w-4xl min-w-0">
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
 
         {/* ── 1. General ── */}
+        {activeTab === 'general' && (
         <Section
           title="General"
           subtitle={`${workspace?.region || 'Asia-Pacific'} · ${workspace?.entity_type}`}
@@ -323,8 +356,10 @@ export default function WorkspaceSettingsPage() {
             </select>
           </Field>
         </Section>
+        )}
 
         {/* ── 2. Data Connectors ── */}
+        {activeTab === 'connectors' && (
         <Section title="Data Connectors" subtitle="Active connections for this workspace" icon={Link2} iconColor="text-purple-400" iconBg="bg-purple-500/10 border-purple-500/20">
           <div className="text-sm text-slate-400 bg-[#1e2637] rounded-lg px-4 py-3 flex items-center justify-between">
             <span>Manage data connectors on the <strong className="text-white">Connectors</strong> page.</span>
@@ -334,8 +369,10 @@ export default function WorkspaceSettingsPage() {
             </button>
           </div>
         </Section>
+        )}
 
         {/* ── 3. AI Preferences ── */}
+        {activeTab === 'ai' && (
         <Section
           title="AI Preferences"
           subtitle="Customize the AI engine for this workspace"
@@ -377,8 +414,10 @@ export default function WorkspaceSettingsPage() {
               hint="AI automatically scans for anomalies and sends daily briefings." />
           </div>
         </Section>
+        )}
 
         {/* ── 4. Goals & Targets ── */}
+        {activeTab === 'goals' && (
         <Section
           title="Goals & Targets"
           subtitle="Sets the target for the KPI Radial on the dashboard"
@@ -432,8 +471,10 @@ export default function WorkspaceSettingsPage() {
             </div>
           </Field>
         </Section>
+        )}
 
         {/* ── 5. Notifications ── */}
+        {activeTab === 'notifications' && (
         <Section
           title="Notifications"
           subtitle="Configure alert thresholds for this workspace"
@@ -470,8 +511,10 @@ export default function WorkspaceSettingsPage() {
               label="In-App Notification Center" hint="Show alerts in the dashboard notification bell." />
           </div>
         </Section>
+        )}
 
         {/* ── 6. Danger Zone ── */}
+        {activeTab === 'danger' && (
         <div className="border border-red-900/30 bg-[#121622] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-red-900/30 flex items-center gap-2 text-red-400">
             <AlertTriangle size={16} />
@@ -513,6 +556,10 @@ export default function WorkspaceSettingsPage() {
                 <Trash2 size={14} /> Delete
               </button>
             </div>
+          </div>
+        </div>
+        )}
+
           </div>
         </div>
       </div>

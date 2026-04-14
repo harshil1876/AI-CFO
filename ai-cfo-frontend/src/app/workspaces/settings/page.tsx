@@ -22,24 +22,26 @@ const TIMEZONES = [
 
 const DEFAULT_ROLES = ['org:admin', 'org:member'];
 
-// ── Collapsible Section ─────────────────────────────────────────────
+const ORG_SETTINGS_TABS = [
+  { id: 'profile', label: 'Profile & Members', icon: Building2 },
+  { id: 'general', label: 'General', icon: Globe },
+  { id: 'security', label: 'Security', icon: Shield },
+  { id: 'billing', label: 'Billing & Plan', icon: CreditCard },
+  { id: 'danger', label: 'Danger Zone', icon: AlertTriangle, danger: true },
+];
+
 function Section({ title, icon: Icon, iconColor = 'text-indigo-400', iconBg = 'bg-indigo-500/10 border-indigo-500/20', children }: any) {
-  const [open, setOpen] = useState(true);
   return (
     <div className="border border-[#1e2637] bg-[#121622] rounded-xl overflow-hidden">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-6 py-4 border-b border-[#1e2637] hover:bg-white/[0.02] transition-colors"
-      >
+      <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e2637]">
         <div className="flex items-center gap-2.5">
           <div className={`p-1.5 rounded-md border ${iconBg}`}>
             <Icon size={15} className={iconColor} />
           </div>
           <h3 className="text-sm font-semibold text-white">{title}</h3>
         </div>
-        {open ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
-      </button>
-      {open && <div className="p-6">{children}</div>}
+      </div>
+      <div className="p-6">{children}</div>
     </div>
   );
 }
@@ -73,6 +75,8 @@ export default function OrganizationSettingsPage() {
   const { organization } = useOrganization();
   const { user } = useUser();
   const { orgId } = useAuth();
+
+  const [activeTab, setActiveTab] = useState('profile');
 
   const prefKey = `org_prefs_${orgId}`;
 
@@ -136,9 +140,32 @@ export default function OrganizationSettingsPage() {
         </div>
       </div>
 
-      <div className="p-6 max-w-4xl space-y-6">
+      <div className="flex-1 flex flex-col md:flex-row px-4 md:px-6 py-6 md:py-8 max-w-[1200px] w-full gap-6 md:gap-10">
+        {/* Left Sidebar Menu */}
+        <div className="w-full md:w-64 flex-shrink-0 space-y-1 print:hidden">
+          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3 px-3">Configure</div>
+          {ORG_SETTINGS_TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer outline-none ${
+                activeTab === tab.id
+                  ? (tab.danger ? 'bg-red-500/10 text-red-500' : 'bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20')
+                  : (tab.danger ? 'text-red-400/80 hover:text-red-400 hover:bg-white/5' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5')
+              }`}
+            >
+              <tab.icon size={16} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Right Content Area */}
+        <div className="flex-1 max-w-4xl min-w-0">
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
 
         {/* ── 1. Clerk Organization Profile (name, logo, members, invitations) ── */}
+        {activeTab === 'profile' && (
         <div className="border border-[#1e2637] bg-[#121622] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[#1e2637] flex items-center gap-2.5">
             <div className="p-1.5 rounded-md bg-indigo-500/10 border border-indigo-500/20">
@@ -185,8 +212,10 @@ export default function OrganizationSettingsPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* ── 2. General CFO Preferences ── */}
+        {activeTab === 'general' && (
         <Section title="General" icon={Globe}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <Field label="Industry Type" hint="Used to customize AI recommendations and benchmarks.">
@@ -202,9 +231,20 @@ export default function OrganizationSettingsPage() {
               </select>
             </Field>
           </div>
+
+          <div className="mt-8 flex justify-end">
+            <button
+              onClick={savePrefs} disabled={isSavingPrefs}
+              className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              {isSavingPrefs ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
         </Section>
+        )}
 
         {/* ── 3. Security ── */}
+        {activeTab === 'security' && (
         <Section title="Security" icon={Shield} iconColor="text-emerald-400" iconBg="bg-emerald-500/10 border-emerald-500/20">
           <div className="space-y-5">
             <Field label="Default Role for New Members" hint="Role assigned when someone accepts an invitation.">
@@ -238,9 +278,20 @@ export default function OrganizationSettingsPage() {
                 hint="Restrict sign-in to your organization's Single Sign-On provider." />
             </div>
           </div>
+
+          <div className="mt-8 flex justify-end">
+            <button
+              onClick={savePrefs} disabled={isSavingPrefs}
+              className="flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              {isSavingPrefs ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
         </Section>
+        )}
 
         {/* ── 4. Billing & Plan ── */}
+        {activeTab === 'billing' && (
         <Section title="Billing & Plan" icon={CreditCard} iconColor="text-amber-400" iconBg="bg-amber-500/10 border-amber-500/20">
           <div className="space-y-4">
             {/* Plan Badge */}
@@ -273,22 +324,16 @@ export default function OrganizationSettingsPage() {
             </div>
           </div>
         </Section>
+        )}
 
         {/* ── Save Toast ── */}
-        <div className="flex justify-end">
-          <button
-            onClick={savePrefs} disabled={isSavingPrefs}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            {isSavingPrefs ? 'Saving…' : 'Save Organization Preferences'}
-          </button>
-        </div>
         <div id="org-save-toast" style={{ opacity: 0, transition: 'opacity 0.3s' }}
-          className="fixed bottom-6 right-6 bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-lg pointer-events-none">
+          className="fixed bottom-6 right-6 bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-lg pointer-events-none z-50">
           ✓ Organization preferences saved
         </div>
 
         {/* ── 5. Danger Zone ── */}
+        {activeTab === 'danger' && (
         <div className="border border-red-900/30 bg-[#121622] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-red-900/30 flex items-center gap-2 text-red-400">
             <AlertTriangle size={16} />
@@ -318,7 +363,10 @@ export default function OrganizationSettingsPage() {
             </div>
           </div>
         </div>
+        )}
 
+          </div>
+        </div>
       </div>
     </div>
   );

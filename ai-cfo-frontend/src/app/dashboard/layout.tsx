@@ -98,15 +98,7 @@ function Sidebar({ mode, setMode }: { mode: SidebarMode; setMode: (m: SidebarMod
       onMouseLeave={() => mode === "hover" && setHovered(false)}
       style={{ minHeight: "100vh" }}
     >
-      {/* Logo area */}
-      <div className="h-12 flex items-center px-3 border-b border-[#1e2637] flex-shrink-0">
-        <div className="flex items-center gap-2.5 overflow-hidden">
-          <img src="/Logo.png" alt="CFOlytics" className="h-6 w-6 object-contain flex-shrink-0" />
-          {isExpanded && (
-            <span className="text-sm font-bold text-white whitespace-nowrap tracking-tight">CFOlytics</span>
-          )}
-        </div>
-      </div>
+      {/* Note: Logo moved to topbar */}
 
       {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto overflow-x-hidden">
@@ -309,28 +301,20 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         />
       </CustomDialog>
 
-      <div className="flex h-screen bg-[#0a0d14] text-white overflow-hidden">
-        {/* ── Sidebar ── */}
-        <Sidebar mode={sidebarMode} setMode={setSidebarMode} />
-
-        {/* ── Main ── */}
-        <main className="flex flex-1 flex-col overflow-hidden">
-
-          {/* ── Paused Workspace Banner ── */}
-          {isPaused && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-400 text-xs">
-              <Pause size={12} />
-              <span>
-                <strong>{activeWorkspace?.name}</strong> is paused — data is read-only.
-                Go to <button onClick={() => router.push('/workspaces')} className="underline hover:text-amber-300">Workspaces</button> to resume.
-              </span>
+      <div className="flex flex-col h-screen bg-[#0a0d14] text-white overflow-hidden">
+        {/* ── Full Width Top Header ── */}
+        <header className="h-12 flex-shrink-0 flex items-center justify-between border-b border-[#1e2637] bg-[#0c0f17] px-4 z-20">
+          {/* Left: Logo + Org Switcher + Workspace Breadcrumb */}
+          <div className="flex items-center gap-4">
+            {/* Logo */}
+            <div className="flex items-center gap-2.5 flex-shrink-0">
+              <img src="/Logo.png" alt="CFOlytics" className="h-6 w-6 object-contain" />
+              <span className="text-sm font-bold text-white tracking-tight">CFOlytics</span>
             </div>
-          )}
 
-          {/* ── Compact Header (48px Supabase-style) ── */}
-          <header className="h-12 flex-shrink-0 flex items-center justify-between border-b border-[#1e2637] bg-[#0a0d14] px-4 z-20">
+            <div className="h-4 w-px bg-[#1e2637] hidden md:block" />
 
-            {/* Left: Org Switcher + Workspace Breadcrumb */}
+            {/* Breadcrumbs */}
             <div className="flex items-center gap-1.5 text-sm">
               <OrganizationSwitcher
                 hidePersonal
@@ -358,6 +342,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </>
               )}
             </div>
+          </div>
 
             {/* Center: Search */}
             <div className="flex-1 max-w-sm mx-6 hidden md:block">
@@ -405,12 +390,30 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          {/* ── Page Content ── */}
-          <div className="flex-1 overflow-auto">
-            {children}
+          <div className="flex flex-1 overflow-hidden">
+            {/* ── Sidebar ── */}
+            <Sidebar mode={sidebarMode} setMode={setSidebarMode} />
+
+            {/* ── Main View ── */}
+            <main className="flex flex-1 flex-col overflow-hidden relative">
+              {/* ── Paused Workspace Banner ── */}
+              {isPaused && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-400 text-xs flex-shrink-0">
+                  <Pause size={12} />
+                  <span>
+                    <strong>{activeWorkspace?.name}</strong> is paused — data is read-only.
+                    Go to <button onClick={() => router.push('/workspaces')} className="underline hover:text-amber-300">Workspaces</button> to resume.
+                  </span>
+                </div>
+              )}
+
+              {/* ── Page Content ── */}
+              <div className="flex-1 overflow-auto">
+                {children}
+              </div>
+            </main>
           </div>
-        </main>
-      </div>
+        </div>
     </CurrencyProvider>
   );
 }

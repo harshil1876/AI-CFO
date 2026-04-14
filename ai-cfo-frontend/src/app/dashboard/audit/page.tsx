@@ -161,6 +161,8 @@ export default function AuditTrailPage() {
         </div>
       </div>
 
+      {/* Main Content Wrapper */}
+      <div className="flex-1 p-6 lg:p-8 flex flex-col gap-6">
       {/* Executive Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-[#0f172a] rounded-xl border border-white/5 p-5 shadow-sm">
@@ -310,6 +312,7 @@ export default function AuditTrailPage() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

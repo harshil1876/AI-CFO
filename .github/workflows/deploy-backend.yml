@@ -1,0 +1,46 @@
+name: Deploy Backend to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ai-cfo-backend/**'
+      - '.github/workflows/deploy-backend.yml'
+
+env:
+  AZURE_WEBAPP_NAME: ai-cfo-backend
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ai-cfo-backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Django Production Checks
+        run: |
+          # Fails if there are critical missing settings or syntax errors
+          python manage.py check --deploy
+        env:
+          DJANGO_SECRET_KEY: dummy-key-for-checks
+          DATABASE_URL: sqlite:///db.sqlite3
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_BACKEND_PUBLISH_PROFILE }}
+          package: './ai-cfo-backend'

@@ -53,10 +53,10 @@ class Transaction(models.Model):
     # Isolated by bot_id to ensure multi-tenancy
     bot_id = models.CharField(max_length=255, db_index=True)
     
-    date = models.DateField(default=timezone.now)
+    date = models.DateField(default=timezone.now, db_index=True)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     description = models.TextField(blank=True, null=True)
-    category = models.CharField(max_length=255)
+    category = models.CharField(max_length=255, db_index=True)
     review_status = models.CharField(max_length=20, choices=REVIEW_STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -81,7 +81,7 @@ class KPISnapshot(models.Model):
     """Stores computed KPI metrics per bot per period."""
     bot_id = models.CharField(max_length=255, db_index=True)
 
-    period = models.CharField(max_length=7)  # e.g. "2026-03"
+    period = models.CharField(max_length=7, db_index=True)  # e.g. "2026-03"
     total_revenue = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     total_expenses = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     net_profit = models.DecimalField(max_digits=15, decimal_places=2, default=0)
@@ -120,7 +120,7 @@ class AnomalyLog(models.Model):
 
     bot_id = models.CharField(max_length=255, db_index=True)
 
-    detected_at = models.DateTimeField(auto_now_add=True)
+    detected_at = models.DateTimeField(auto_now_add=True, db_index=True)
     category = models.CharField(max_length=255)
     description = models.TextField()
     severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default='medium')
@@ -228,7 +228,7 @@ class Budget(models.Model):
     category = models.CharField(max_length=255) 
     
     allocated_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    month_year = models.CharField(max_length=7) # e.g. "2026-03"
+    month_year = models.CharField(max_length=7, db_index=True) # e.g. "2026-03"
     
     # Version control (e.g. 1 = drafted, 2 = revised)
     version = models.IntegerField(default=1)
@@ -298,7 +298,8 @@ class Invoice(models.Model):
             ('rejected', 'Rejected'),
             ('paid', 'Paid')
         ],
-        default='pending_approval'
+        default='pending_approval',
+        db_index=True
     )
     additional_notes = models.TextField(null=True, blank=True, help_text="Any extra text, terms, or context extracted from the document.")
     file_path = models.CharField(max_length=500, null=True, blank=True)

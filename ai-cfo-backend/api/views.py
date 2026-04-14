@@ -11,6 +11,31 @@ from .models import (
     InvoiceThread, InboundEmailLog
 )
 from django.utils import timezone
+import os
+from rest_framework.exceptions import PermissionDenied
+
+def get_verified_bot_id(request, provided_bot_id):
+    """
+    Validates that the requested bot_id matches the Clerk JWT's org_id or user_id.
+    """
+    if not provided_bot_id:
+        return provided_bot_id
+        
+    clerk_org = getattr(request, 'clerk_org_id', None)
+    clerk_user = getattr(request, 'clerk_user_id', None)
+    
+    # Development fallback (bypass strict check locally)
+    is_debug = str(os.environ.get("DEBUG", "False")).lower() == "true"
+    host = request.get_host() if hasattr(request, 'get_host') else ""
+    if is_debug or 'localhost' in host or '127.0.0.1' in host:
+        return provided_bot_id
+
+    # The provided bot_id must match either the Clerk active Organization ID or User ID
+    if provided_bot_id != clerk_org and provided_bot_id != clerk_user:
+        raise PermissionDenied("Unauthorized: Workspace access denied.")
+        
+    return provided_bot_id
+
 from .serializers import (
     UploadedFileSerializer, ParsedRecordSerializer,
     TransactionSerializer, DepartmentDataSerializer,
@@ -42,7 +67,7 @@ def upload_file(request):
     Upload any financial file (CSV, Excel, JSON, etc.)
     The system will auto-detect the schema and generate an AI summary.
     """
-    bot_id = request.data.get("bot_id")
+    bot_id = get_verified_bot_id(request, request.data.get("bot_id"))
     file_obj = request.FILES.get("file")
 
     if not bot_id:
@@ -71,7 +96,7 @@ class UploadedFileListView(generics.ListAPIView):
     serializer_class = UploadedFileSerializer
 
     def get_queryset(self):
-        bot_id = self.request.query_params.get("bot_id")
+        bot_id = get_verified_bot_id(self.request, self.request.query_params.get("bot_id"))
         if bot_id:
             return UploadedFile.objects.filter(bot_id=bot_id).order_by("-uploaded_at")
         return UploadedFile.objects.all().order_by("-uploaded_at")
@@ -83,7 +108,7 @@ class ParsedRecordListView(generics.ListAPIView):
 
     def get_queryset(self):
         file_id = self.request.query_params.get("file_id")
-        bot_id = self.request.query_params.get("bot_id")
+        bot_id = get_verified_bot_id(self.request, self.request.query_params.get("bot_id"))
         qs = ParsedRecord.objects.all()
         if file_id:
             qs = qs.filter(source_file_id=file_id)
@@ -100,7 +125,7 @@ class TransactionListCreateView(generics.ListCreateAPIView):
     serializer_class = TransactionSerializer
 
     def get_queryset(self):
-        bot_id = self.request.query_params.get('bot_id')
+        bot_id = get_verified_bot_id(self.request, self.request.query_params.get('bot_id'))
         if bot_id:
             return Transaction.objects.filter(bot_id=bot_id)
         return Transaction.objects.all()
@@ -110,7 +135,7 @@ class DepartmentDataListCreateView(generics.ListCreateAPIView):
     serializer_class = DepartmentDataSerializer
 
     def get_queryset(self):
-        bot_id = self.request.query_params.get('bot_id')
+        bot_id = get_verified_bot_id(self.request, self.request.query_params.get('bot_id'))
         if bot_id:
             return DepartmentData.objects.filter(bot_id=bot_id)
         return DepartmentData.objects.all()
@@ -126,7 +151,7 @@ def update_transaction_status(request, transaction_id):
     PATCH /api/transactions/<id>/status/
     Body: { "review_status": "reviewed" | "flagged" | "approved" | "pending" }
     """
-    bot_id = request.query_params.get('bot_id') or request.data.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.query_params.get('bot_id') or request.data.get('bot_id'))
     new_status = request.data.get('review_status')
     VALID_STATUSES = ['pending', 'reviewed', 'flagged', 'approved']
 
@@ -159,7 +184,7 @@ def usage_metrics(request):
     Returns real org-level usage stats: file uploads, rows ingested, transactions, chat queries.
     """
     import os
-    bot_id = request.query_params.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.query_params.get('bot_id'))
     if not bot_id:
         return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -193,7 +218,7 @@ def run_analytics(request):
     2. Detect anomalies
     3. Generate prescriptive recommendations
     """
-    bot_id = request.data.get("bot_id")
+    bot_id = get_verified_bot_id(request, request.data.get("bot_id"))
     period = request.data.get("period")
 
     if not bot_id or not period:
@@ -218,7 +243,7 @@ def run_analytics(request):
 @api_view(["POST"])
 def run_forecast(request):
     """Trigger Prophet revenue forecast for a bot."""
-    bot_id = request.data.get("bot_id")
+    bot_id = get_verified_bot_id(request, request.data.get("bot_id"))
     periods = request.data.get("periods", 6)
 
     if not bot_id:
@@ -245,7 +270,7 @@ class KPISnapshotListView(generics.ListAPIView):
     serializer_class = KPISnapshotSerializer
 
     def get_queryset(self):
-        bot_id = self.request.query_params.get("bot_id")
+        bot_id = get_verified_bot_id(self.request, self.request.query_params.get("bot_id"))
         if bot_id:
             return KPISnapshot.objects.filter(bot_id=bot_id).order_by("-created_at")
         return KPISnapshot.objects.all().order_by("-created_at")
@@ -255,7 +280,7 @@ class ForecastResultListView(generics.ListAPIView):
     serializer_class = ForecastResultSerializer
 
     def get_queryset(self):
-        bot_id = self.request.query_params.get("bot_id")
+        bot_id = get_verified_bot_id(self.request, self.request.query_params.get("bot_id"))
         if bot_id:
             return ForecastResult.objects.filter(bot_id=bot_id).order_by("forecast_date")
         return ForecastResult.objects.all().order_by("forecast_date")
@@ -265,7 +290,7 @@ class AnomalyLogListView(generics.ListAPIView):
     serializer_class = AnomalyLogSerializer
 
     def get_queryset(self):
-        bot_id = self.request.query_params.get("bot_id")
+        bot_id = get_verified_bot_id(self.request, self.request.query_params.get("bot_id"))
         if bot_id:
             return AnomalyLog.objects.filter(bot_id=bot_id).order_by("-detected_at")
         return AnomalyLog.objects.all().order_by("-detected_at")
@@ -275,7 +300,7 @@ class RecommendationListView(generics.ListAPIView):
     serializer_class = RecommendationSerializer
 
     def get_queryset(self):
-        bot_id = self.request.query_params.get("bot_id")
+        bot_id = get_verified_bot_id(self.request, self.request.query_params.get("bot_id"))
         if bot_id:
             return Recommendation.objects.filter(bot_id=bot_id).order_by("-created_at")
         return Recommendation.objects.all().order_by("-created_at")
@@ -388,7 +413,7 @@ def data_sources(request):
     GET  /api/connectors/          — list all data sources for a bot_id
     POST /api/connectors/          — register a new data source connection
     """
-    bot_id = request.query_params.get('bot_id') or request.data.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.query_params.get('bot_id') or request.data.get('bot_id'))
     if not bot_id:
         return Response({'error': 'bot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -428,7 +453,7 @@ def data_sources(request):
 @api_view(['DELETE'])
 def delete_data_source(request, source_id):
     """DELETE /api/connectors/<id>/ — remove a registered connector."""
-    bot_id = request.query_params.get('bot_id') or request.data.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.query_params.get('bot_id') or request.data.get('bot_id'))
     try:
         ds = DataSource.objects.get(id=source_id, bot_id=bot_id)
         ds.delete()
@@ -445,7 +470,7 @@ def trigger_sync(request, source_id):
     """
     from .connectors import get_connector
 
-    bot_id = request.data.get('bot_id') or request.query_params.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.data.get('bot_id')) or request.query_params.get('bot_id')
     try:
         ds = DataSource.objects.get(id=source_id, bot_id=bot_id)
     except DataSource.DoesNotExist:
@@ -480,7 +505,7 @@ class BudgetListCreateView(generics.ListCreateAPIView):
     serializer_class = BudgetSerializer
 
     def get_queryset(self):
-        bot_id = self.request.query_params.get('bot_id')
+        bot_id = get_verified_bot_id(self.request, self.request.query_params.get('bot_id'))
         month = self.request.query_params.get('month_year')
         qs = Budget.objects.filter(is_active=True)
         if bot_id:
@@ -492,7 +517,7 @@ class BudgetListCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         # We want to do "upsert": if a budget for this bot, category, month exists, 
         # deactivate it and create a v+1
-        bot_id = request.data.get('bot_id')
+        bot_id = get_verified_bot_id(request, request.data.get('bot_id'))
         category = request.data.get('category')
         month_year = request.data.get('month_year')
         allocated_amount = request.data.get('allocated_amount')
@@ -526,7 +551,7 @@ def upload_budget(request):
     POST /api/budgets/upload/
     Uploads an Excel file containing headers: [category, allocated_amount, month_year]
     """
-    bot_id = request.data.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.data.get('bot_id'))
     file_obj = request.FILES.get('file')
 
     if not bot_id or not file_obj:
@@ -610,7 +635,7 @@ class PurchaseOrderListCreateView(generics.ListCreateAPIView):
     serializer_class = PurchaseOrderSerializer
 
     def get_queryset(self):
-        bot_id = self.request.query_params.get('bot_id')
+        bot_id = get_verified_bot_id(self.request, self.request.query_params.get('bot_id'))
         qs = PurchaseOrder.objects.all()
         if bot_id:
             qs = qs.filter(bot_id=bot_id)
@@ -623,7 +648,7 @@ class InvoiceListView(generics.ListAPIView):
     serializer_class = InvoiceSerializer
 
     def get_queryset(self):
-        bot_id = self.request.query_params.get('bot_id')
+        bot_id = get_verified_bot_id(self.request, self.request.query_params.get('bot_id'))
         qs = Invoice.objects.all()
         if bot_id:
             qs = qs.filter(bot_id=bot_id)
@@ -639,7 +664,7 @@ def upload_invoice(request):
     from .services.invoice_processor import process_invoice_document
     import os
 
-    bot_id = request.data.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.data.get('bot_id'))
     file_obj = request.FILES.get('file')
 
     if not bot_id or not file_obj:
@@ -680,7 +705,7 @@ def update_invoice_status(request, invoice_id):
         invoice = Invoice.objects.get(id=invoice_id)
         
         # Verify Bot ID Authorization
-        bot_id = request.data.get('bot_id') or request.query_params.get('bot_id')
+        bot_id = get_verified_bot_id(request, request.data.get('bot_id')) or request.query_params.get('bot_id')
         if not bot_id or invoice.bot_id != bot_id:
             return Response({'error': 'Unauthorized Workspace'}, status=status.HTTP_403_FORBIDDEN)
 
@@ -950,7 +975,7 @@ def update_team_permission(request):
     """
     Overwrites a specific user's granular feature boolean.
     """
-    bot_id = request.data.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.data.get('bot_id'))
     org_role = request.headers.get('X-Org-Role')
     target_user_id = request.data.get('user_id')
     feature_name = request.data.get('feature')  # e.g., 'can_view_reports'
@@ -991,7 +1016,7 @@ def update_anomaly_status(request, anomaly_id):
     Updates resolution status and/or assigned_to for an Anomaly.
     """
     try:
-        bot_id = request.data.get('bot_id') or request.query_params.get('bot_id')
+        bot_id = get_verified_bot_id(request, request.data.get('bot_id')) or request.query_params.get('bot_id')
         anomaly = AnomalyLog.objects.get(id=anomaly_id, bot_id=bot_id)
 
         new_status = request.data.get('status')
@@ -1022,7 +1047,7 @@ def anomaly_comments(request, anomaly_id):
     GET  /api/anomalies/<id>/comments/ — fetch all comments
     POST /api/anomalies/<id>/comments/ — add a new comment with @mention detection
     """
-    bot_id = request.query_params.get('bot_id') or request.data.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.query_params.get('bot_id') or request.data.get('bot_id'))
 
     if request.method == 'GET':
         comments = AnomalyComment.objects.filter(anomaly_id=anomaly_id, bot_id=bot_id).order_by('created_at')
@@ -1235,7 +1260,7 @@ class GoalTargetListCreateView(generics.ListCreateAPIView):
     serializer_class = GoalTargetSerializer
 
     def get_queryset(self):
-        bot_id = self.request.query_params.get("bot_id")
+        bot_id = get_verified_bot_id(self.request, self.request.query_params.get("bot_id"))
         workspace_id = self.request.query_params.get("workspace_id")
         qs = GoalTarget.objects.all().order_by('-created_at')
         if bot_id:
@@ -1360,7 +1385,23 @@ def mailgun_inbound_webhook(request):
     Real Mailgun webhooks include 'attachment-1' as a multipart file.
     """
     from .services.invoice_processor import process_invoice_document
-    import os, base64
+    import os, base64, hmac, hashlib
+
+    # Mailgun Signature Verification
+    signing_key = os.environ.get('MAILGUN_SIGNING_KEY')
+    if signing_key:
+        timestamp = request.data.get('timestamp', '')
+        token = request.data.get('token', '')
+        signature = request.data.get('signature', '')
+        
+        expected_sig = hmac.new(
+            key=signing_key.encode('utf-8'),
+            msg=f"{timestamp}{token}".encode('utf-8'),
+            digestmod=hashlib.sha256
+        ).hexdigest()
+        
+        if not hmac.compare_digest(signature, expected_sig):
+            return Response({'error': 'Invalid webhook signature'}, status=status.HTTP_403_FORBIDDEN)
 
     sender = request.data.get('sender') or request.data.get('from', 'unknown@sender.com')
     recipient = request.data.get('recipient', '')
@@ -1497,7 +1538,7 @@ def nl_query(request):
     """
     from .services.nl2sql_service import run_nl_query
 
-    bot_id = request.data.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.data.get('bot_id'))
     question = request.data.get('question', '').strip()
 
     if not bot_id or not question:
@@ -1528,7 +1569,7 @@ def generate_budget(request):
     """
     from .services.budget_generator_service import generate_ai_budget
 
-    bot_id = request.data.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.data.get('bot_id'))
     if not bot_id:
         return Response({'error': 'bot_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1560,7 +1601,7 @@ def custom_kpis(request):
     """
     from .models import CustomKPI
 
-    bot_id = request.query_params.get('bot_id') or request.data.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.query_params.get('bot_id') or request.data.get('bot_id'))
     if not bot_id:
         return Response({'error': 'bot_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1614,7 +1655,7 @@ def evaluate_custom_kpi(request, kpi_id):
     from .models import CustomKPI
     from .services.kpi_evaluator_service import evaluate_formula
 
-    bot_id = request.data.get('bot_id') or request.query_params.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.data.get('bot_id')) or request.query_params.get('bot_id')
     try:
         kpi = CustomKPI.objects.get(pk=kpi_id, bot_id=bot_id)
     except CustomKPI.DoesNotExist:
@@ -1639,7 +1680,7 @@ def delete_custom_kpi(request, kpi_id):
     Soft-deletes (deactivates) a custom KPI.
     """
     from .models import CustomKPI
-    bot_id = request.query_params.get('bot_id') or request.data.get('bot_id')
+    bot_id = get_verified_bot_id(request, request.query_params.get('bot_id') or request.data.get('bot_id'))
     try:
         kpi = CustomKPI.objects.get(pk=kpi_id, bot_id=bot_id)
         kpi.is_active = False

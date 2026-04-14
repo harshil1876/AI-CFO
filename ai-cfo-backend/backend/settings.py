@@ -50,6 +50,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "api.middleware.clerk_auth.ClerkAuthMiddleware",
     "api.middleware.db_session.TenantSessionMiddleware",
@@ -85,21 +86,11 @@ WSGI_APPLICATION = "backend.wsgi.application"
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME", "postgres"),
-        "USER": os.environ.get("DB_USER", "postgres"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", ""),
-        "HOST": os.environ.get("DB_HOST", "localhost"),
-        "PORT": os.environ.get("DB_PORT", "5432"),
-        "OPTIONS": {
-            "sslmode": "require",
-        },
-        # IMPORTANT: Must be 0 when using Supabase Session Pooler.
-        # Persistent connections (>0) exhaust the pool_size limit,
-        # causing "MaxClientsInSessionMode: max clients reached" errors.
-        "CONN_MAX_AGE": 0,
-    }
+    "default": dj_database_url.config(
+        default="sqlite:///" + str(BASE_DIR / "db.sqlite3"),
+        conn_max_age=0,
+        ssl_require=False  # Handled automatically if needed by dj_database_url based on URL scheme
+    )
 }
 
 
@@ -138,6 +129,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -146,9 +139,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS Configuration (Security)
 # ──────────────────────────────────────────────
-# We allow all origins to eliminate 'Network Error' browser restrictions.
-# This is safe because every request is strictly authenticated via Clerk JWT Bearer tokens anyway.
-CORS_ALLOW_ALL_ORIGINS = True
+cors_env = os.getenv("CORS_ALLOWED_ORIGINS")
+if cors_env:
+    CORS_ALLOWED_ORIGINS = cors_env.split(",")
+else:
+    CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
+    
 CORS_ALLOW_CREDENTIALS = True
 
 # Allow all standard headers + custom headers

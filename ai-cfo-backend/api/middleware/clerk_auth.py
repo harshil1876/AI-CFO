@@ -23,7 +23,10 @@ class ClerkAuthMiddleware:
     """
 
     # Paths that don't require authentication
-    EXEMPT_PATHS = []
+    EXEMPT_PATHS = [
+        "/api/ap/webhooks/",
+        "/api/health/"
+    ]
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -39,6 +42,11 @@ class ClerkAuthMiddleware:
         # Skip auth for non-API paths (admin, etc.)
         if not request.path.startswith("/api/"):
             return self.get_response(request)
+
+        # Pass through exempt endpoints
+        for exempt in self.EXEMPT_PATHS:
+            if request.path.startswith(exempt):
+                return self.get_response(request)
 
         # Skip if no CLERK_ISSUER configured (development fallback)
         if not self.clerk_issuer or not self.jwks_client:

@@ -1480,3 +1480,171 @@ def email_inbox_logs(request):
         'error_message': l.error_message,
         'received_at': l.received_at.isoformat(),
     } for l in logs])
+
+
+# =====================================================
+# Sprint 18 Part B: Ad-Hoc Data Query Agent (NL2SQL)
+# =====================================================
+
+@api_view(['POST'])
+def nl_query(request):
+    """
+    POST /api/query/
+    Body: { "bot_id": "...", "question": "Show me top 10 expenses" }
+
+    Converts natural-language financial questions into safe Django ORM queries.
+    Returns: { success, intent, summary, columns, rows }
+    """
+    from .services.nl2sql_service import run_nl_query
+
+    bot_id = request.data.get('bot_id')
+    question = request.data.get('question', '').strip()
+
+    if not bot_id or not question:
+        return Response({'error': 'bot_id and question are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    result = run_nl_query(bot_id, question)
+    return Response(result)
+
+
+# =====================================================
+# Sprint 18 Part B: Generative Budget Planner
+# =====================================================
+
+@api_view(['POST'])
+def generate_budget(request):
+    """
+    POST /api/budget/generate/
+    Body: {
+        "bot_id": "...",
+        "target_month": "2026-06",
+        "growth_assumption": 15,
+        "instructions": "Cut travel by 20%",
+        "apply_to_db": false
+    }
+
+    Uses Gemini to synthesize a full AI budget plan modeled on historical data.
+    Returns: { success, budget_items, ai_rationale, total_budget }
+    """
+    from .services.budget_generator_service import generate_ai_budget
+
+    bot_id = request.data.get('bot_id')
+    if not bot_id:
+        return Response({'error': 'bot_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    params = {
+        'target_month': request.data.get('target_month'),
+        'growth_assumption': request.data.get('growth_assumption', 10),
+        'instructions': request.data.get('instructions', ''),
+        'apply_to_db': request.data.get('apply_to_db', False),
+    }
+
+    result = generate_ai_budget(bot_id, params)
+
+    if not result.get('success'):
+        return Response(result, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(result, status=status.HTTP_200_OK)
+
+
+# =====================================================
+# Sprint 18 Part B: Custom KPI Builder
+# =====================================================
+
+@api_view(['GET', 'POST'])
+def custom_kpis(request):
+    """
+    GET  /api/kpi-builder/?bot_id=xxx      — list all custom KPIs
+    POST /api/kpi-builder/                 — create a new custom KPI
+    Body: { bot_id, name, description, formula, unit, icon, color }
+    """
+    from .models import CustomKPI
+
+    bot_id = request.query_params.get('bot_id') or request.data.get('bot_id')
+    if not bot_id:
+        return Response({'error': 'bot_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == 'GET':
+        kpis = CustomKPI.objects.filter(bot_id=bot_id, is_active=True)
+        return Response([{
+            'id': k.id,
+            'name': k.name,
+            'description': k.description,
+            'formula': k.formula,
+            'unit': k.unit,
+            'icon': k.icon,
+            'color': k.color,
+            'sort_order': k.sort_order,
+            'created_at': k.created_at.isoformat(),
+        } for k in kpis])
+
+    # POST — create
+    name = request.data.get('name', '').strip()
+    formula = request.data.get('formula', '').strip()
+    if not name or not formula:
+        return Response({'error': 'name and formula are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    kpi = CustomKPI.objects.create(
+        bot_id=bot_id,
+        name=name,
+        description=request.data.get('description', ''),
+        formula=formula,
+        unit=request.data.get('unit', '$'),
+        icon=request.data.get('icon', '📊'),
+        color=request.data.get('color', 'indigo'),
+    )
+
+    return Response({
+        'id': kpi.id,
+        'name': kpi.name,
+        'formula': kpi.formula,
+        'unit': kpi.unit,
+        'icon': kpi.icon,
+        'color': kpi.color,
+        'message': f'Custom KPI "{kpi.name}" created successfully.',
+    }, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+def evaluate_custom_kpi(request, kpi_id):
+    """
+    POST /api/kpi-builder/<id>/evaluate/?bot_id=xxx
+    Runs the formula evaluator and returns the computed numeric result.
+    """
+    from .models import CustomKPI
+    from .services.kpi_evaluator_service import evaluate_formula
+
+    bot_id = request.data.get('bot_id') or request.query_params.get('bot_id')
+    try:
+        kpi = CustomKPI.objects.get(pk=kpi_id, bot_id=bot_id)
+    except CustomKPI.DoesNotExist:
+        return Response({'error': 'KPI not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    result = evaluate_formula(bot_id, kpi.formula)
+    return Response({
+        'id': kpi.id,
+        'name': kpi.name,
+        'formula': kpi.formula,
+        'unit': kpi.unit,
+        'icon': kpi.icon,
+        'color': kpi.color,
+        **result,
+    })
+
+
+@api_view(['DELETE'])
+def delete_custom_kpi(request, kpi_id):
+    """
+    DELETE /api/kpi-builder/<id>/?bot_id=xxx
+    Soft-deletes (deactivates) a custom KPI.
+    """
+    from .models import CustomKPI
+    bot_id = request.query_params.get('bot_id') or request.data.get('bot_id')
+    try:
+        kpi = CustomKPI.objects.get(pk=kpi_id, bot_id=bot_id)
+        kpi.is_active = False
+        kpi.save()
+        return Response({'message': f'KPI "{kpi.name}" deleted.'})
+    except CustomKPI.DoesNotExist:
+        return Response({'error': 'KPI not found.'}, status=status.HTTP_404_NOT_FOUND)
+

@@ -10,7 +10,8 @@ import {
   UploadCloud, Zap, FlaskConical, Link2,
   Bell, Search, LogOut, Shield, AlertTriangle,
   History, BarChart, ChevronDown, Settings, Users,
-  PanelLeft, PanelLeftClose, BrainCircuit, ChevronRight, Pause, Plus
+  PanelLeft, PanelLeftClose, BrainCircuit, ChevronRight, Pause, Plus,
+  Ruler, Database
 } from "lucide-react";
 import { getAuthHeaders } from "@/lib/api";
 import { CurrencyProvider, useCurrency } from "@/context/CurrencyContext";
@@ -51,6 +52,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/pipeline", label: "Intelligence", icon: Zap },
       { href: "/dashboard/simulation", label: "Scenarios", icon: FlaskConical },
       { href: "/dashboard/ap", label: "Accounts Payable", icon: Receipt },
+      { href: "/dashboard/kpi-builder", label: "KPI Builder", icon: Ruler },
     ],
   },
   {
@@ -59,6 +61,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/upload", label: "Upload Data", icon: UploadCloud },
       { href: "/dashboard/connectors", label: "Connectors", icon: Link2 },
       { href: "/dashboard/anomalies", label: "Anomaly Hub", icon: AlertTriangle },
+      { href: "/dashboard/nl-query", label: "Data Query (AI)", icon: Database },
     ],
   },
   {

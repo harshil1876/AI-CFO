@@ -509,3 +509,125 @@ export interface UploadedFileRecord {
   ai_summary: string | null;
 }
 
+// ==========================================
+// Sprint 18 Part B: Proactive Generative Layer
+// ==========================================
+
+// ── NL2SQL Data Query Agent ──────────────────────────
+export interface NLQueryResult {
+  success: boolean;
+  intent?: string;
+  summary?: string;
+  columns?: string[];
+  rows?: Record<string, string | number>[];
+  message?: string;
+  error?: string;
+}
+
+export async function runNLQuery(botId: string, question: string): Promise<NLQueryResult> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/query/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...auth },
+    body: JSON.stringify({ bot_id: botId, question }),
+  });
+  return res.json();
+}
+
+// ── Generative Budget Planner ─────────────────────────
+export interface BudgetItem {
+  category: string;
+  allocated_amount: number;
+  rationale: string;
+}
+
+export interface GeneratedBudget {
+  success: boolean;
+  target_month?: string;
+  budget_items?: BudgetItem[];
+  ai_rationale?: string;
+  total_budget?: number;
+  saved_to_db?: number;
+  message?: string;
+  error?: string;
+}
+
+export async function generateAIBudget(
+  botId: string,
+  targetMonth: string,
+  growthAssumption: number,
+  instructions: string,
+  applyToDB: boolean
+): Promise<GeneratedBudget> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/budget/generate/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...auth },
+    body: JSON.stringify({
+      bot_id: botId,
+      target_month: targetMonth,
+      growth_assumption: growthAssumption,
+      instructions,
+      apply_to_db: applyToDB,
+    }),
+  });
+  return res.json();
+}
+
+// ── Custom KPI Builder ────────────────────────────────
+export interface CustomKPI {
+  id: number;
+  name: string;
+  description: string;
+  formula: string;
+  unit: string;
+  icon: string;
+  color: string;
+  sort_order: number;
+  created_at: string;
+  // Evaluation result fields (populated after evaluate call)
+  result?: number;
+  variable_values?: Record<string, number>;
+  success?: boolean;
+  error?: string;
+}
+
+export async function getCustomKPIs(botId: string): Promise<CustomKPI[]> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/kpi-builder/?bot_id=${botId}`, { headers: auth });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function createCustomKPI(botId: string, data: {
+  name: string; description: string; formula: string;
+  unit: string; icon: string; color: string;
+}): Promise<CustomKPI> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/kpi-builder/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...auth },
+    body: JSON.stringify({ bot_id: botId, ...data }),
+  });
+  return res.json();
+}
+
+export async function evaluateCustomKPI(botId: string, kpiId: number): Promise<CustomKPI> {
+  const auth = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/kpi-builder/${kpiId}/evaluate/?bot_id=${botId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...auth },
+    body: JSON.stringify({ bot_id: botId }),
+  });
+  return res.json();
+}
+
+export async function deleteCustomKPI(botId: string, kpiId: number): Promise<void> {
+  const auth = await getAuthHeaders();
+  await fetch(`${API_URL}/kpi-builder/${kpiId}/?bot_id=${botId}`, {
+    method: "DELETE",
+    headers: auth,
+  });
+}
+
+

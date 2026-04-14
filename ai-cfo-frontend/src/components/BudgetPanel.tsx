@@ -7,11 +7,13 @@ import {
 } from "recharts";
 import { 
   getBudgets, saveBudget, uploadExcelBudget, getVarianceAnalysis, getMonteCarloSimulation,
-  type Budget, type VarianceReport, type MonteCarloResult 
+  generateAIBudget,
+  type Budget, type VarianceReport, type MonteCarloResult, type GeneratedBudget
 } from "@/lib/api";
+import { Sparkles, Check, AlertTriangle } from "lucide-react";
 
 export default function BudgetPanel({ botId }: { botId: string }) {
-  const [activeTab, setActiveTab] = useState<"builder" | "variance" | "montecarlo">("variance");
+  const [activeTab, setActiveTab] = useState<"builder" | "variance" | "montecarlo" | "ai-draft">("variance");
   
   // Budget Builder State
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -25,6 +27,14 @@ export default function BudgetPanel({ botId }: { botId: string }) {
   
   // Monte Carlo State
   const [monteCarloData, setMonteCarloData] = useState<MonteCarloResult | null>(null);
+
+  // AI Draft State
+  const [aiGrowth, setAiGrowth] = useState<number>(10);
+  const [aiInstructions, setAiInstructions] = useState("");
+  const [aiTargetMonth, setAiTargetMonth] = useState(new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 7));
+  const [aiResult, setAiResult] = useState<GeneratedBudget | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiApplying, setAiApplying] = useState(false);
 
   useEffect(() => {
     loadBudgets();
@@ -89,35 +99,43 @@ export default function BudgetPanel({ botId }: { botId: string }) {
     }
   };
 
+  const handleAIDraft = async () => {
+    setAiLoading(true);
+    setAiResult(null);
+    try {
+      const res = await generateAIBudget(botId, aiTargetMonth, aiGrowth, aiInstructions, false);
+      setAiResult(res);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleApplyAIDraft = async () => {
+    if (!aiResult) return;
+    setAiApplying(true);
+    try {
+      await generateAIBudget(botId, aiTargetMonth, aiGrowth, aiInstructions, true);
+      await loadBudgets();
+      await loadVariance();
+      alert(`AI budget applied successfully to ${aiTargetMonth}!`);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAiApplying(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header & Tabs */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
-        <div className="flex bg-black/20 border border-amber-500/10 rounded-xl p-1">
-          <button
-            onClick={() => setActiveTab("variance")}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeTab === "variance" ? "bg-amber-600 text-white shadow-lg shadow-amber-500/20" : "text-gray-400 hover:text-white"
-            }`}
-          >
-            Variance Analysis
-          </button>
-          <button
-            onClick={() => setActiveTab("builder")}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeTab === "builder" ? "bg-yellow-700 text-white shadow-lg shadow-yellow-800/20" : "text-gray-400 hover:text-white"
-            }`}
-          >
-            Budget Builder
-          </button>
-          <button
-            onClick={() => setActiveTab("montecarlo")}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeTab === "montecarlo" ? "bg-amber-800 text-white shadow-lg shadow-amber-900/20" : "text-gray-400 hover:text-white"
-            }`}
-          >
-            Monte Carlo Simulation
-          </button>
+      <div className="flex bg-black/20 border border-amber-500/10 rounded-xl p-1">
+          <button onClick={() => setActiveTab("variance")} className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === "variance" ? "bg-amber-600 text-white shadow-lg shadow-amber-500/20" : "text-gray-400 hover:text-white"}`}>Variance Analysis</button>
+          <button onClick={() => setActiveTab("builder")} className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === "builder" ? "bg-yellow-700 text-white shadow-lg shadow-yellow-800/20" : "text-gray-400 hover:text-white"}`}>Budget Builder</button>
+          <button onClick={() => setActiveTab("montecarlo")} className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === "montecarlo" ? "bg-amber-800 text-white shadow-lg shadow-amber-900/20" : "text-gray-400 hover:text-white"}`}>Monte Carlo</button>
+          <button onClick={() => setActiveTab("ai-draft")} className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === "ai-draft" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-gray-400 hover:text-white"}`}><Sparkles size={13} />AI Draft</button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -317,6 +335,99 @@ export default function BudgetPanel({ botId }: { botId: string }) {
           ) : (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── AI Draft Tab ── */}
+      {activeTab === "ai-draft" && (
+        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {/* Config Panel */}
+          <div className="rounded-xl border border-indigo-500/20 bg-[#0c0f17] p-6">
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                <Sparkles size={14} className="text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white">Generative Budget Planner</h3>
+                <p className="text-xs text-slate-500">AI models a full budget plan from your historical spend data.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-xs text-slate-500 mb-1.5">Target Month</label>
+                <input type="month" value={aiTargetMonth} onChange={e => setAiTargetMonth(e.target.value)}
+                  className="w-full bg-[#0a0d14] border border-[#1e2637] rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1.5">Growth Assumption (%)</label>
+                <input type="number" value={aiGrowth} onChange={e => setAiGrowth(Number(e.target.value))}
+                  className="w-full bg-[#0a0d14] border border-[#1e2637] rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 outline-none"
+                  placeholder="e.g. 15 for +15%" />
+              </div>
+              <div className="md:col-span-1">
+                <label className="block text-xs text-slate-500 mb-1.5">Special Instructions</label>
+                <input type="text" value={aiInstructions} onChange={e => setAiInstructions(e.target.value)}
+                  placeholder="e.g. Cut travel by 20%, increase R&D"
+                  className="w-full bg-[#0a0d14] border border-[#1e2637] rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 outline-none" />
+              </div>
+            </div>
+            <button onClick={handleAIDraft} disabled={aiLoading}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
+              {aiLoading ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Generating…</>) : (<><Sparkles size={14} />Generate AI Budget Draft</>)}
+            </button>
+          </div>
+
+          {/* AI Result */}
+          {aiResult && (
+            <div className="rounded-xl border border-indigo-500/20 bg-[#0c0f17] overflow-hidden">
+              {aiResult.error ? (
+                <div className="flex items-center gap-2.5 p-5 text-red-400">
+                  <AlertTriangle size={16} />
+                  <p className="text-sm">{aiResult.error}</p>
+                </div>
+              ) : (
+                <>
+                  {/* Rationale */}
+                  <div className="px-5 py-4 border-b border-[#1e2637] bg-indigo-500/5">
+                    <p className="text-xs text-indigo-400 font-semibold uppercase tracking-wider mb-1">AI Rationale</p>
+                    <p className="text-sm text-slate-300 leading-relaxed">{aiResult.ai_rationale}</p>
+                    <p className="text-xs text-slate-500 mt-2">Total Draft Budget: <span className="font-bold text-white">${Number(aiResult.total_budget).toLocaleString()}</span></p>
+                  </div>
+
+                  {/* Line Items Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="text-[10px] text-slate-600 uppercase border-b border-[#1e2637]">
+                        <tr>
+                          <th className="px-4 py-2 text-left">Category</th>
+                          <th className="px-4 py-2 text-right">Allocated ($)</th>
+                          <th className="px-4 py-2 text-left">AI Rationale</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(aiResult.budget_items || []).map((item, i) => (
+                          <tr key={i} className="border-b border-[#1e2637] hover:bg-white/[0.02]">
+                            <td className="px-4 py-3 font-medium text-white text-xs">{item.category}</td>
+                            <td className="px-4 py-3 text-right text-indigo-400 font-bold text-xs">${Number(item.allocated_amount).toLocaleString()}</td>
+                            <td className="px-4 py-3 text-slate-500 text-xs">{item.rationale}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Apply Button */}
+                  <div className="px-5 py-4 border-t border-[#1e2637] flex items-center gap-3">
+                    <button onClick={handleApplyAIDraft} disabled={aiApplying}
+                      className="flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
+                      {aiApplying ? "Saving…" : (<><Check size={13} />Apply to Budget & Save</>)}
+                    </button>
+                    <p className="text-xs text-slate-600">This will save all {aiResult.budget_items?.length} categories to {aiResult.target_month}.</p>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

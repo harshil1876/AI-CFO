@@ -575,3 +575,34 @@ class InboundEmailLog(models.Model):
 
     def __str__(self):
         return f"Email from {self.sender_email} [{self.status}] @ {self.received_at}"
+
+
+# =====================================================
+# Sprint 18 Part B: Proactive Generative Layer
+# =====================================================
+
+class CustomKPI(models.Model):
+    """
+    User-defined KPI formula cards shown on the main dashboard.
+    Inspired by Pigment's formula/metric builder.
+    The formula uses plain-English variable names mapped to DB fields.
+    e.g. "Total Revenue - (Marketing Spend + Engineering Spend)"
+    """
+    bot_id = models.CharField(max_length=255, db_index=True)
+    name = models.CharField(max_length=100)          # e.g. "Gross Margin"
+    description = models.CharField(max_length=300, blank=True, default='')
+    formula = models.TextField()                     # e.g. "Total Revenue - Total Expenses"
+    unit = models.CharField(max_length=20, default='$')   # $ | % | x | days
+    icon = models.CharField(max_length=10, default='📊')  # emoji icon for the tile
+    color = models.CharField(max_length=30, default='indigo') # tile accent color
+    is_active = models.BooleanField(default=True)
+    sort_order = models.IntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['sort_order', 'created_at']
+
+    def __str__(self):
+        return f"[{self.bot_id}] {self.name}: {self.formula}"

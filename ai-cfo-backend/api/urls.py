@@ -29,6 +29,8 @@ from .views import (
     update_transaction_status, usage_metrics,
     # Sprint 18: Invoice Workspace & Email Ingestion
     invoice_threads, mailgun_inbound_webhook, email_inbox_logs,
+    # Sprint 18 Part B: Proactive Generative Layer
+    nl_query, generate_budget, custom_kpis, evaluate_custom_kpi, delete_custom_kpi,
 )
 from .v1_views import ingest_transactions, fetch_kpis
 
@@ -122,4 +124,15 @@ urlpatterns = [
 
     # Sprint 18: Email Inbox Processing Log
     path('ap/email-logs/', email_inbox_logs, name='email-inbox-logs'),
+
+    # Sprint 18 Part B: Ad-Hoc Data Query Agent (NL2SQL)
+    path('query/', nl_query, name='nl-query'),
+
+    # Sprint 18 Part B: Generative Budget Planner
+    path('budget/generate/', generate_budget, name='budget-generate'),
+
+    # Sprint 18 Part B: Custom KPI Builder
+    path('kpi-builder/', custom_kpis, name='custom-kpis'),
+    path('kpi-builder/<int:kpi_id>/evaluate/', evaluate_custom_kpi, name='evaluate-custom-kpi'),
+    path('kpi-builder/<int:kpi_id>/', delete_custom_kpi, name='delete-custom-kpi'),
 ]

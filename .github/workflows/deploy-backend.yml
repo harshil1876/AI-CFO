@@ -28,12 +28,13 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install --target=".python_packages/lib/site-packages" -r requirements.txt
 
       - name: Django Production Checks
         run: |
           # Fails if there are critical missing settings or syntax errors
-          python manage.py check --deploy
+          PYTHONPATH=".python_packages/lib/site-packages" python manage.py check --deploy
         env:
           DJANGO_SECRET_KEY: dummy-key-for-checks
           DATABASE_URL: sqlite:///db.sqlite3

@@ -6,6 +6,7 @@ import {
     type SimulationResult,
     type SimulationScenario,
 } from "@/lib/api";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface SimulationPanelProps {
     botId: string;
@@ -17,6 +18,7 @@ export default function SimulationPanel({ botId }: SimulationPanelProps) {
     const [target, setTarget] = useState("");
     const [result, setResult] = useState<SimulationResult | null>(null);
     const [isRunning, setIsRunning] = useState(false);
+    const { formatAmount } = useCurrency();
 
     const period = new Date().toISOString().slice(0, 7);
 
@@ -150,16 +152,16 @@ export default function SimulationPanel({ botId }: SimulationPanelProps) {
                                     <div className="bg-[#0a0f1a] px-4 py-3 text-sm text-right text-gray-400">
                                         {metric.key === "profit_margin"
                                             ? `${result.baseline[metric.key]}%`
-                                            : `$${result.baseline[metric.key]?.toLocaleString()}`}
+                                            : formatAmount(result.baseline[metric.key] || 0)}
                                     </div>
                                     <div className="bg-[#0a0f1a] px-4 py-3 text-sm text-right text-white font-medium">
                                         {metric.key === "profit_margin"
                                             ? `${result.simulated[metric.key]}%`
-                                            : `$${result.simulated[metric.key]?.toLocaleString()}`}
+                                            : formatAmount(result.simulated[metric.key] || 0)}
                                     </div>
                                     <div className={`bg-[#0a0f1a] px-4 py-3 text-sm text-right font-medium ${impact > 0 ? "text-emerald-400" : impact < 0 ? "text-red-400" : "text-gray-500"
                                         }`}>
-                                        {impact > 0 ? "+" : ""}{metric.key === "profit_margin" ? `${impact}%` : `$${impact.toLocaleString()}`}
+                                        {impact > 0 ? "+" : ""}{metric.key === "profit_margin" ? `${impact}%` : formatAmount(impact)}
                                     </div>
                                 </div>
                             );

@@ -19,18 +19,25 @@ import { CustomDialog, DialogButton } from "@/components/CustomDialog";
 
 // ─── Currency Switcher ──────────────────────────────────────────────────────
 function CurrencySwitcher() {
-  const { currency, setCurrency } = useCurrency();
+  const { currency, setCurrency, rateLabel } = useCurrency();
   return (
-    <select
-      value={currency}
-      onChange={(e) => setCurrency(e.target.value as any)}
-      className="bg-transparent border border-[#2a3448] rounded-md px-2 py-1 text-xs font-medium text-slate-400 hover:text-white hover:border-white/20 transition-all outline-none cursor-pointer"
-    >
-      <option value="USD">USD ($)</option>
-      <option value="INR">INR (₹)</option>
-      <option value="EUR">EUR (€)</option>
-      <option value="GBP">GBP (£)</option>
-    </select>
+    <div className="flex items-center gap-2">
+      <select
+        value={currency}
+        onChange={(e) => setCurrency(e.target.value as any)}
+        className="bg-transparent border border-[#2a3448] rounded-md px-2 py-1 text-xs font-medium text-slate-400 hover:text-white hover:border-white/20 transition-all outline-none cursor-pointer"
+      >
+        <option value="USD">USD ($)</option>
+        <option value="INR">INR (₹)</option>
+        <option value="EUR">EUR (€)</option>
+        <option value="GBP">GBP (£)</option>
+      </select>
+      {currency !== "USD" && (
+        <span className="text-[10px] text-emerald-400/70 hidden lg:block whitespace-nowrap">
+          {rateLabel}
+        </span>
+      )}
+    </div>
   );
 }
 

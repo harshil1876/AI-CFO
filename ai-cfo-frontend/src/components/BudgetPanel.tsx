@@ -11,9 +11,11 @@ import {
   type Budget, type VarianceReport, type MonteCarloResult, type GeneratedBudget
 } from "@/lib/api";
 import { Sparkles, Check, AlertTriangle } from "lucide-react";
+import { useCurrency } from "@/context/CurrencyContext";
 
 export default function BudgetPanel({ botId }: { botId: string }) {
   const [activeTab, setActiveTab] = useState<"builder" | "variance" | "montecarlo" | "ai-draft">("variance");
+  const { formatAmount, symbol } = useCurrency();
   
   // Budget Builder State
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -208,7 +210,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
                 {budgets.map(b => (
                   <div key={b.id} className="bg-[#0a1128] border border-amber-500/10 rounded-xl p-4">
                     <p className="text-gray-500 text-xs truncate mb-1">{b.category}</p>
-                    <p className="text-lg font-semibold text-white tracking-tight">${Number(b.allocated_amount).toLocaleString()}</p>
+                    <p className="text-lg font-semibold text-white tracking-tight">{formatAmount(Number(b.allocated_amount))}</p>
                     <p className="text-[10px] text-gray-600 mt-2 text-right">v{b.version}</p>
                   </div>
                 ))}
@@ -236,16 +238,16 @@ export default function BudgetPanel({ botId }: { botId: string }) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="rounded-2xl border border-amber-500/10 bg-[#0a1128] p-5 border-l-4 border-l-amber-500">
               <p className="text-xs text-gray-400 uppercase tracking-wider">Total Budgeted</p>
-              <p className="text-2xl font-bold mt-1">${varianceData.total_budget.toLocaleString()}</p>
+              <p className="text-2xl font-bold mt-1">{formatAmount(varianceData.total_budget)}</p>
             </div>
             <div className="rounded-2xl border border-amber-500/10 bg-[#0a1128] p-5 border-l-4 border-l-yellow-600">
               <p className="text-xs text-gray-400 uppercase tracking-wider">Total Actual Spend</p>
-              <p className="text-2xl font-bold mt-1">${varianceData.total_actual.toLocaleString()}</p>
+              <p className="text-2xl font-bold mt-1">{formatAmount(varianceData.total_actual)}</p>
             </div>
             <div className={`rounded-2xl border border-white/10 bg-white/[0.02] p-5 border-l-4 ${varianceData.total_variance < 0 ? 'border-l-red-500' : 'border-l-emerald-500'}`}>
               <p className="text-xs text-gray-400 uppercase tracking-wider">Variance</p>
               <div className="flex items-end gap-2 mt-1">
-                <p className="text-2xl font-bold">${Math.abs(varianceData.total_variance).toLocaleString()}</p>
+                <p className="text-2xl font-bold">{formatAmount(Math.abs(varianceData.total_variance))}</p>
                 <p className={`text-sm mb-1 font-medium ${varianceData.total_variance < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                   {varianceData.total_variance < 0 ? 'Over Budget' : 'Under Budget'} ({Math.abs(varianceData.total_variance_percent)}%)
                 </p>
@@ -261,7 +263,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
                 <BarChart data={varianceData.details} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                   <XAxis dataKey="category" stroke="#ffffff50" tick={{fill: '#ffffff80', fontSize: 12}} axisLine={false} tickLine={false} />
-                  <YAxis stroke="#ffffff50" tick={{fill: '#ffffff80', fontSize: 12}} axisLine={false} tickLine={false} tickFormatter={(val: number) => `$${val/1000}k`} />
+                  <YAxis stroke="#ffffff50" tick={{fill: '#ffffff80', fontSize: 12}} axisLine={false} tickLine={false} tickFormatter={(val: number) => `${symbol}${(val/1000).toFixed(0)}k`} />
                   <Tooltip 
                     cursor={{fill: '#ffffff05'}}
                     contentStyle={{ backgroundColor: '#0a1128', borderColor: 'rgba(245,158,11,0.2)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.5)' }}
@@ -284,7 +286,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
           <div className="rounded-2xl border border-amber-500/10 bg-[#0a1128] p-6 text-center shadow-lg">
             <h3 className="text-lg font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-yellow-500">Monte Carlo Simulation</h3>
             <p className="text-gray-400 text-sm max-w-2xl mx-auto">
-              We simulated <strong className="text-amber-400">1,000 algorithmic futures</strong> based on your historical cash flow variance (Mean: ${monteCarloData?.historical_mean?.toLocaleString() || 0}). 
+              We simulated <strong className="text-amber-400">1,000 algorithmic futures</strong> based on your historical cash flow variance (Mean: {formatAmount(monteCarloData?.historical_mean || 0)}). 
               Below is the 12-month projected probability tunnel for upcoming expenses/cash flows.
             </p>
           </div>
@@ -316,7 +318,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" vertical={false} />
                     <XAxis dataKey="month_year" stroke="#ffffff50" tick={{fill: '#ffffff80', fontSize: 12}} axisLine={false} tickLine={false} />
-                    <YAxis stroke="#ffffff50" tick={{fill: '#ffffff80', fontSize: 12}} axisLine={false} tickLine={false} tickFormatter={(val: number) => `$${val/1000}k`} />
+                    <YAxis stroke="#ffffff50" tick={{fill: '#ffffff80', fontSize: 12}} axisLine={false} tickLine={false} tickFormatter={(val: number) => `${symbol}${(val/1000).toFixed(0)}k`} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: '#0a1128', borderColor: 'rgba(245,158,11,0.2)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.5)' }}
                       itemStyle={{ color: '#fff', fontSize: '12px' }}
@@ -393,7 +395,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
                   <div className="px-5 py-4 border-b border-[#1e2637] bg-indigo-500/5">
                     <p className="text-xs text-indigo-400 font-semibold uppercase tracking-wider mb-1">AI Rationale</p>
                     <p className="text-sm text-slate-300 leading-relaxed">{aiResult.ai_rationale}</p>
-                    <p className="text-xs text-slate-500 mt-2">Total Draft Budget: <span className="font-bold text-white">${Number(aiResult.total_budget).toLocaleString()}</span></p>
+                    <p className="text-xs text-slate-500 mt-2">Total Draft Budget: <span className="font-bold text-white">{formatAmount(Number(aiResult.total_budget))}</span></p>
                   </div>
 
                   {/* Line Items Table */}
@@ -402,7 +404,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
                       <thead className="text-[10px] text-slate-600 uppercase border-b border-[#1e2637]">
                         <tr>
                           <th className="px-4 py-2 text-left">Category</th>
-                          <th className="px-4 py-2 text-right">Allocated ($)</th>
+                          <th className="px-4 py-2 text-right">Allocated ({symbol})</th>
                           <th className="px-4 py-2 text-left">AI Rationale</th>
                         </tr>
                       </thead>
@@ -410,7 +412,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
                         {(aiResult.budget_items || []).map((item, i) => (
                           <tr key={i} className="border-b border-[#1e2637] hover:bg-white/[0.02]">
                             <td className="px-4 py-3 font-medium text-white text-xs">{item.category}</td>
-                            <td className="px-4 py-3 text-right text-indigo-400 font-bold text-xs">${Number(item.allocated_amount).toLocaleString()}</td>
+                            <td className="px-4 py-3 text-right text-indigo-400 font-bold text-xs">{formatAmount(Number(item.allocated_amount))}</td>
                             <td className="px-4 py-3 text-slate-500 text-xs">{item.rationale}</td>
                           </tr>
                         ))}

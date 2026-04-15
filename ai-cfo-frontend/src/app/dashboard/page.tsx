@@ -5,6 +5,7 @@ import { useUser, useOrganization } from "@clerk/nextjs";
 import MetricsGrid from "@/components/MetricsGrid";
 import FinancialChart from "@/components/FinancialChart";
 import { useWorkspace } from "@/context/WorkspaceContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import { Target, Users, MessageSquare, TrendingUp, TrendingDown, Minus, Clock, FileText } from "lucide-react";
 import { getAuthHeaders } from "@/lib/api";
 
@@ -13,6 +14,7 @@ import { useRouter } from 'next/navigation';
 // ─── Target KPI Radial Widget ───────────────────────────────────────────────
 function TargetKpiWidget({ botId }: { botId: string }) {
   const { activeWorkspaceId } = useWorkspace();
+  const { formatAmount } = useCurrency();
   const [goal, setGoal] = useState<any>(null);
   const [actualRev, setActualRev] = useState(0);
   const router = useRouter();
@@ -86,7 +88,7 @@ function TargetKpiWidget({ botId }: { botId: string }) {
         <div>
           <p className="text-sm font-semibold text-white">{goal.goal_name}</p>
           <p className="text-xs text-slate-500 mt-0.5">
-            ${(actualRev / 1000).toFixed(1)}k of ${(goal.target_value / 1000).toFixed(1)}k
+            {formatAmount(actualRev)} of {formatAmount(goal.target_value)}
           </p>
           <button 
             onClick={() => router.push('/dashboard/reports')}

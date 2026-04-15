@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { getKPIs } from "@/lib/api";
+import { useCurrency } from "@/context/CurrencyContext";
 
 export default function FinancialChart({ botId }: { botId: string }) {
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [hasData, setHasData] = useState(true);
+    const { formatAmount, symbol } = useCurrency();
 
     useEffect(() => {
         const loadGraphData = async () => {
@@ -95,7 +97,7 @@ export default function FinancialChart({ botId }: { botId: string }) {
                         fontSize={11} 
                         tickLine={false} 
                         axisLine={false} 
-                        tickFormatter={(value) => `$${(value / 1000)}k`}
+                        tickFormatter={(value) => `${symbol}${(value / 1000).toFixed(0)}k`}
                     />
                     <Tooltip 
                         contentStyle={{ 

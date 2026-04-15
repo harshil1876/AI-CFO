@@ -48,6 +48,51 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
   resolved:   <CheckCircle className="h-3 w-3" />,
 };
 
+// ─── Feature D: Risk Type Classification ─────────────────────────────────────
+type RiskType = "Duplicate" | "Unusual Amount" | "Vendor Change" | "Timing Anomaly" | "Pattern Deviation" | "High Value";
+
+function deriveRiskType(anomaly: Anomaly): RiskType {
+  const desc = (anomaly.description || "").toLowerCase();
+  const cat  = (anomaly.category  || "").toLowerCase();
+  if (desc.includes("duplicate") || desc.includes("repeated"))        return "Duplicate";
+  if (desc.includes("vendor") || desc.includes("supplier"))           return "Vendor Change";
+  if (desc.includes("timing") || desc.includes("late") || desc.includes("early")) return "Timing Anomaly";
+  if (anomaly.amount && anomaly.amount > 50000)                       return "High Value";
+  if (desc.includes("unusual") || desc.includes("unexpected"))        return "Unusual Amount";
+  return "Pattern Deviation";
+}
+
+const RISK_TYPE_STYLE: Record<RiskType, string> = {
+  "Duplicate":        "text-rose-400 bg-rose-500/10 border-rose-500/20",
+  "Unusual Amount":   "text-amber-400 bg-amber-500/10 border-amber-500/20",
+  "Vendor Change":    "text-orange-400 bg-orange-500/10 border-orange-500/20",
+  "Timing Anomaly":   "text-sky-400 bg-sky-500/10 border-sky-500/20",
+  "Pattern Deviation":"text-purple-400 bg-purple-500/10 border-purple-500/20",
+  "High Value":       "text-red-400 bg-red-500/10 border-red-500/20",
+};
+
+const SEVERITY_SCORE: Record<string, number> = { critical: 92, high: 74, medium: 48, low: 22 };
+
+function RiskScoreBar({ score, severity }: { score: number; severity: string }) {
+  const color = severity === "critical" ? "bg-red-500" :
+                severity === "high"     ? "bg-orange-500" :
+                severity === "medium"   ? "bg-amber-500" : "bg-blue-400";
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-slate-500 whitespace-nowrap">Risk Score</span>
+      <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden" style={{ minWidth: "60px" }}>
+        <div
+          className={`h-full rounded-full transition-all duration-700 ${color}`}
+          style={{ width: `${score}%` }}
+        />
+      </div>
+      <span className={`text-[10px] font-bold ${
+        score >= 80 ? "text-red-400" : score >= 50 ? "text-amber-400" : "text-blue-400"
+      }`}>{score}</span>
+    </div>
+  );
+}
+
 export default function AnomalyHubPage() {
   const { getToken, orgId, userId: currentUserId } = useAuth();
   const { user } = useUser();
@@ -206,6 +251,8 @@ export default function AnomalyHubPage() {
           {anomalies.map((anomaly) => {
             const isExpanded = expandedId === anomaly.id;
             const anomalyComments = comments[anomaly.id] || [];
+            const riskType = deriveRiskType(anomaly);
+            const riskScore = SEVERITY_SCORE[anomaly.severity] || 40;
             return (
               <div
                 key={anomaly.id}
@@ -225,6 +272,10 @@ export default function AnomalyHubPage() {
                         {STATUS_ICON[anomaly.status]}
                         {anomaly.status.replace("-", " ").toUpperCase()}
                       </span>
+                      {/* Feature D: Risk Type Tag */}
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold ${RISK_TYPE_STYLE[riskType]}`}>
+                        {riskType}
+                      </span>
                       <span className="text-slate-400 text-xs">{anomaly.category}</span>
                       {anomaly.amount !== null && (
                         <span className="text-white font-semibold text-sm ml-auto">
@@ -233,6 +284,10 @@ export default function AnomalyHubPage() {
                       )}
                     </div>
                     <p className="text-slate-300 text-sm mt-2 leading-relaxed">{anomaly.description}</p>
+                    {/* Feature D: Risk Score Bar */}
+                    <div className="mt-2 max-w-xs">
+                      <RiskScoreBar score={riskScore} severity={anomaly.severity} />
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-3 shrink-0">

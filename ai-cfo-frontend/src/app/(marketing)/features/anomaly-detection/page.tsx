@@ -44,6 +44,18 @@ export default function AnomalyDetectionPage() {
           </div>
         </div>
 
+        {/* Real product screenshot */}
+        <div className="rounded-2xl overflow-hidden border border-[#1e2637] shadow-2xl shadow-red-500/10 mb-8">
+          <div className="px-5 py-3 border-b border-white/5 bg-[#111827] flex items-center gap-2">
+            <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
+            <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
+            <div className="h-2.5 w-2.5 rounded-full bg-emerald-500/70" />
+            <p className="text-[10px] text-slate-500 ml-3 uppercase tracking-wider font-semibold">CFOlytics — Anomaly Resolution Hub</p>
+          </div>
+          <img src="/marketing-photos/Anomaly Hub/AH-1.png" alt="Anomaly Detection Hub" className="w-full object-cover object-top" />
+        </div>
+        <p className="text-xs text-slate-600 text-center mb-12">↑ Live product screenshot — actual CFOlytics interface</p>
+
         {/* Anomaly card mockup */}
         <div className="rounded-2xl border border-white/8 bg-[#0f172a] mb-16 overflow-hidden">
           <div className="px-6 py-3 border-b border-white/5 bg-[#111827]">

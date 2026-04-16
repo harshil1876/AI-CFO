@@ -64,12 +64,31 @@ export default function StartupsPage() {
         </div>
 
         {/* Pull quote */}
-        <div className="rounded-2xl border border-white/8 bg-[#0f172a] p-8 mb-16">
+        <div className="rounded-2xl border border-white/8 bg-[#0f172a] p-8 mb-10">
           <p className="text-slate-400 leading-relaxed max-w-2xl">
             Most startup finance tools give you charts. CFOlytics tells you what they mean — "Your runway
             is 11.4 months at current burn, and your AWS spend is 28% above benchmark for your revenue tier."
             That's the difference between a dashboard and a CFO.
           </p>
+        </div>
+
+        {/* Screenshots — key screens startups use daily */}
+        <div className="mb-16">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500 mb-8">What your dashboard looks like — from day one</p>
+          <div className="grid md:grid-cols-3 gap-5">
+            {[
+              { img: "/marketing-photos/Overview/OVER-1.png", label: "Live Financial Overview Dashboard" },
+              { img: "/marketing-photos/Scenarios/SC-1.png", label: "What-If Scenario Planning" },
+              { img: "/marketing-photos/Notifications/N-1.png", label: "Real-time Anomaly Alerts" },
+            ].map((s) => (
+              <div key={s.label} className="rounded-xl overflow-hidden border border-[#1e2637] group hover:border-blue-500/30 transition-all shadow-lg">
+                <div className="px-4 py-2.5 bg-[#111827] border-b border-white/5">
+                  <span className="text-xs font-medium text-slate-400">{s.label}</span>
+                </div>
+                <img src={s.img} alt={s.label} className="w-full object-cover object-top group-hover:scale-[1.01] transition-transform duration-500" />
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="border-t border-white/5 pt-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">

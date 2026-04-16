@@ -35,6 +35,22 @@ export default function SimulationPage() {
           </div>
         </div>
 
+        {/* Real product screenshots — side by side */}
+        <div className="grid md:grid-cols-2 gap-4 mb-8">
+          {[
+            { img: "/marketing-photos/Scenarios/SC-1.png", label: "Scenario Configuration Panel" },
+            { img: "/marketing-photos/Scenarios/SC-2.png", label: "Monte Carlo Results Output" },
+          ].map((s) => (
+            <div key={s.label} className="rounded-xl overflow-hidden border border-[#1e2637] shadow-xl group hover:border-indigo-500/30 transition-all">
+              <div className="px-4 py-2.5 bg-[#111827] border-b border-white/5">
+                <span className="text-xs font-medium text-slate-400">{s.label}</span>
+              </div>
+              <img src={s.img} alt={s.label} className="w-full object-cover object-top group-hover:scale-[1.01] transition-transform duration-500" />
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-slate-600 text-center mb-12">↑ Live product screenshots — actual CFOlytics interface</p>
+
         {/* Monte Carlo output mockup */}
         <div className="rounded-2xl border border-white/8 bg-[#0f172a] p-6 mb-16">
           <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-6">Monte Carlo result — +20% revenue scenario</p>

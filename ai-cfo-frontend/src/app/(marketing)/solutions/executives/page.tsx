@@ -57,7 +57,7 @@ export default function ExecutivesPage() {
         </div>
 
         {/* Pull stat */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
           {[
             { value: "< 3 sec", label: "Per AI financial answer" },
             { value: "1 click", label: "To generate any report" },
@@ -69,6 +69,25 @@ export default function ExecutivesPage() {
               <p className="text-xs text-slate-500">{s.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* Executive dashboard screenshots */}
+        <div className="mb-16">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500 mb-8">What you see when you open CFOlytics</p>
+          <div className="grid md:grid-cols-2 gap-6">
+            {[
+              { img: "/marketing-photos/KPI Builder/KPI-2.png", label: "Live KPI Gauge — Target vs Actual" },
+              { img: "/marketing-photos/Finance Report/FR-1.png", label: "One-Click Board Financial Report" },
+            ].map((s) => (
+              <div key={s.label} className="rounded-xl overflow-hidden border border-[#1e2637] group hover:border-blue-500/30 transition-all shadow-xl">
+                <div className="px-4 py-2.5 bg-[#111827] border-b border-white/5">
+                  <span className="text-xs font-medium text-slate-400">{s.label}</span>
+                </div>
+                <img src={s.img} alt={s.label} className="w-full object-cover object-top group-hover:scale-[1.01] transition-transform duration-500" />
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-slate-600 text-center mt-4">↑ Live product screenshots — actual CFOlytics interface</p>
         </div>
 
         <div className="border-t border-white/5 pt-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">

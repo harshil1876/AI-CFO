@@ -53,6 +53,25 @@ export default function EnterprisePage() {
           ))}
         </div>
 
+        {/* Evidence screenshots */}
+        <div className="mb-16">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500 mb-8">Built for compliance — live product evidence</p>
+          <div className="grid md:grid-cols-3 gap-5">
+            {[
+              { img: "/marketing-photos/Audit Trails/AT-1.png", label: "Immutable Audit Trail" },
+              { img: "/marketing-photos/Permissions/P-1.png", label: "Role-Based Permissions (RBAC)" },
+              { img: "/marketing-photos/Workspace Settings/WS-1.png", label: "Workspace Configuration" },
+            ].map((s) => (
+              <div key={s.label} className="rounded-xl overflow-hidden border border-[#1e2637] group hover:border-amber-500/30 transition-all shadow-lg">
+                <div className="px-4 py-2.5 bg-[#111827] border-b border-white/5">
+                  <span className="text-xs font-medium text-slate-400">{s.label}</span>
+                </div>
+                <img src={s.img} alt={s.label} className="w-full object-cover object-top group-hover:scale-[1.01] transition-transform duration-500" />
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="border-t border-white/5 pt-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
             <p className="text-white font-semibold mb-1">No 6-month implementation. No consultants.</p>

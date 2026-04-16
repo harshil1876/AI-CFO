@@ -43,6 +43,29 @@ export default function BudgetPage() {
           </div>
         </div>
 
+        {/* Real product screenshots — 5-step workflow */}
+        <div className="mb-8">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500 mb-6">The full budgeting workflow — 5 screens</p>
+          <div className="grid grid-cols-1 gap-4">
+            {[
+              { img: "/marketing-photos/Budgeting/B-1.png", step: "1", label: "Budget Overview Dashboard" },
+              { img: "/marketing-photos/Budgeting/B-2.png", step: "2", label: "Line-item Budget Builder" },
+              { img: "/marketing-photos/Budgeting/B-3.png", step: "3", label: "Variance Analysis View" },
+              { img: "/marketing-photos/Budgeting/B-4.png", step: "4", label: "Monte Carlo Simulation" },
+              { img: "/marketing-photos/Budgeting/B-5.png", step: "5", label: "Approved & Locked Budget" },
+            ].map((s) => (
+              <div key={s.step} className="rounded-xl overflow-hidden border border-[#1e2637] group hover:border-amber-500/30 transition-all shadow-lg">
+                <div className="px-4 py-2.5 bg-[#111827] border-b border-white/5 flex items-center gap-3">
+                  <span className="h-6 w-6 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[10px] font-bold text-amber-400">{s.step}</span>
+                  <span className="text-xs font-medium text-slate-400">{s.label}</span>
+                </div>
+                <img src={s.img} alt={s.label} className="w-full object-cover object-top group-hover:scale-[1.01] transition-transform duration-500" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <p className="text-xs text-slate-600 text-center mb-16">↑ Live product screenshots — actual CFOlytics interface</p>
+
         {/* AI Budget table mockup */}
         <div className="rounded-2xl border border-white/8 bg-[#0f172a] overflow-hidden mb-16">
           <div className="px-6 py-3 border-b border-white/5 bg-[#111827] flex items-center justify-between">

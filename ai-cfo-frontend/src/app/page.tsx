@@ -70,54 +70,15 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right — a product illustration: stat cards */}
-            <div className="relative hidden lg:block">
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-500/3 to-transparent rounded-3xl" />
-              <div className="space-y-3">
-                {/* Mini dashboard mockup */}
-                <div className="rounded-2xl border border-white/8 bg-[#0f172a] p-5">
-                  <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-3">Revenue — Apr 2026</p>
-                  <div className="flex items-end gap-1 h-16">
-                    {[40, 55, 45, 70, 60, 85, 75, 90, 80, 95, 88, 100].map((h, i) => (
-                      <div key={i}
-                        className={`flex-1 rounded-sm ${i === 11 ? "bg-blue-400" : "bg-white/10"}`}
-                        style={{ height: `${h}%` }} />
-                    ))}
-                  </div>
-                  <div className="flex justify-between mt-3">
-                    <span className="text-xs text-slate-500">₹42.3L this month</span>
-                    <span className="text-xs text-emerald-400 font-medium">↑ 18.4%</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-white/8 bg-[#0f172a] p-4">
-                    <p className="text-[10px] text-slate-500 mb-1">Net Margin</p>
-                    <p className="text-2xl font-bold text-white">22.1%</p>
-                    <p className="text-[10px] text-emerald-400 mt-1">↑ vs last month</p>
-                  </div>
-                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-                    <p className="text-[10px] text-amber-400 mb-1">⚠ Anomaly flagged</p>
-                    <p className="text-sm font-semibold text-white leading-tight">Duplicate vendor payment</p>
-                    <p className="text-[10px] text-slate-500 mt-1">Critical · ₹2.84L</p>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-white/8 bg-[#0f172a] p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-6 w-6 rounded-full bg-blue-500/20 flex items-center justify-center">
-                      <MessageSquare className="h-3 w-3 text-blue-400" />
-                    </div>
-                    <p className="text-[10px] text-slate-400">AI CFO</p>
-                  </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    "Your March expense spike was driven by engineering hires (₹7.2L) and the AWS scale-up for the product launch. Net margin is still within target."
-                  </p>
-                  <div className="mt-2 flex gap-1.5">
-                    <span className="px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-[9px] text-emerald-400 font-semibold">High Confidence</span>
-                    <span className="px-2 py-0.5 rounded-full border border-blue-500/20 bg-blue-500/5 text-[9px] text-blue-400">Grounded in your data</span>
-                  </div>
-                </div>
+            {/* Right — a product illustration: flagship screenshot */}
+            <div className="relative hidden lg:block perspective-1000">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-500/10 to-transparent rounded-3xl" />
+              <div className="relative transform rotate-y-[-5deg] rotate-x-[5deg] transition-transform hover:scale-[1.02] duration-700">
+                <img 
+                  src="/marketing-photos/Overview/OVER-1.png" 
+                  alt="CFOlytics Main Dashboard Overview" 
+                  className="rounded-xl border border-[#1e2637] shadow-2xl shadow-blue-500/20 w-full object-cover"
+                />
               </div>
             </div>
           </div>
@@ -153,57 +114,60 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Feature list — not uniform cards */}
-          <div className="grid lg:grid-cols-3 gap-px bg-white/5 rounded-2xl overflow-hidden">
+          {/* Feature list — Real App Screenshots */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                icon: <MessageSquare className="h-5 w-5 text-blue-400" />,
+                img: "/marketing-photos/AI CFO Chat/AI-CFO-CHAT-1.png",
                 title: "Ask anything in plain English",
                 desc: "\"Why did expenses jump in March?\" — your AI CFO answers with specific numbers, not generic advice, in under 3 seconds.",
                 link: "/features/ai-chat",
               },
               {
-                icon: <TrendingUp className="h-5 w-5 text-purple-400" />,
-                title: "See 6 months ahead",
-                desc: "Revenue forecasting built from your own historical data. Not benchmarks, not industry averages — your actual patterns.",
-                link: "/features/forecasting",
+                img: "/marketing-photos/Budgeting/B-1.png",
+                title: "Budgets that write themselves",
+                desc: "Set your growth %, give instructions, and get a complete category-level budget draft with AI rationale per line.",
+                link: "/features/budget",
               },
               {
-                icon: <FlaskConical className="h-5 w-5 text-indigo-400" />,
-                title: "Test decisions before making them",
-                desc: "1,000-run Monte Carlo simulation for any scenario — headcount change, cost cut, revenue dip. Probability ranges, not point estimates.",
-                link: "/features/simulation",
+                img: "/marketing-photos/Anomaly Hub/AH-1.png",
+                title: "Spot anomalies instantly",
+                desc: "Every transaction runs through 7 machine learning layers. Vendor duplicates and timeline variance are caught before accountants see them.",
+                link: "/features/anomaly-detection",
               },
               {
-                icon: <BarChart3 className="h-5 w-5 text-emerald-400" />,
+                img: "/marketing-photos/Finance Report/FR-1.png",
                 title: "Reports in one click",
                 desc: "P&L, Cash Flow, Balance Sheet — auto-generated from your data. With AI narrative summaries ready to paste into your board pack.",
-                link: "/features",
+                link: "/marketing-photos/Finance Report/FR-1.pdf",
+                isPdfLink: true
               },
               {
-                icon: <Shield className="h-5 w-5 text-amber-400" />,
+                img: "/marketing-photos/Audit Trails/AT-1.png",
                 title: "Every action logged, immutably",
                 desc: "SOC2-ready audit trail. Who did what, when, from where. Exportable CSV for compliance reviews.",
                 link: "/solutions/enterprise",
               },
               {
-                icon: <Database className="h-5 w-5 text-red-400" />,
-                title: "Budgets that write themselves",
-                desc: "Set your growth %, give instructions, and get a complete category-level budget draft with AI rationale per line.",
-                link: "/features/budget",
+                img: "/marketing-photos/Accounts Payables/AP-1.png",
+                title: "Automated Payables (OCR)",
+                desc: "Drag in vendor PDFs. Vision AI extracts invoices, matches Purchase Orders, and runs fraud checks entirely on Autopilot.",
+                link: "/features/accounts-payable",
               },
             ].map((f, i) => (
-              <Link key={i} href={f.link}
-                className="block bg-[#0f172a] p-8 hover:bg-[#111827] transition-all group border-white/0">
-                <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl border border-white/8 bg-white/[0.03] group-hover:border-white/15 transition-colors">
-                  {f.icon}
+              <a key={i} href={f.link} target={f.isPdfLink ? "_blank" : "_self"}
+                className="block bg-[#0f172a] hover:bg-[#111827] transition-all group rounded-2xl overflow-hidden border border-white/5 hover:border-white/20 shadow-lg">
+                <div className="h-44 w-full bg-[#0a0d14] border-b border-white/5 overflow-hidden group-hover:scale-105 transition-transform duration-700">
+                  <img src={f.img} alt={f.title} className="w-full h-full object-cover object-top opacity-90 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <h3 className="text-base font-semibold text-white mb-2 leading-snug">{f.title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
-                <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-600 group-hover:text-blue-400 transition-colors">
-                  Learn more <ArrowRight className="h-3 w-3" />
+                <div className="p-6">
+                  <h3 className="text-base font-bold text-white mb-2 leading-snug">{f.title}</h3>
+                  <p className="text-sm text-slate-400 leading-relaxed">{f.desc}</p>
+                  <div className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-600 group-hover:text-blue-400 transition-colors">
+                    {f.isPdfLink ? "Download PDF Sample" : "Explore Feature"} <ArrowRight className="h-3.5 w-3.5" />
+                  </div>
                 </div>
-              </Link>
+              </a>
             ))}
           </div>
         </div>

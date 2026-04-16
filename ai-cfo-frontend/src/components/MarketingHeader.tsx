@@ -11,12 +11,16 @@ const NAV = [
     label: "Features",
     href: "/features",
     dropdown: [
-      { label: "Features Overview",     href: "/features",                   desc: "Everything CFOlytics does",             icon: "⚡" },
-      { label: "AI Chat CFO",           href: "/features/ai-chat",            desc: "Conversational CFO powered by Gemini", icon: "💬" },
-      { label: "Anomaly Detection",     href: "/features/anomaly-detection",   desc: "Real-time AI-powered risk alerts",     icon: "🔍" },
-      { label: "Predictive Forecasting",href: "/features/forecasting",         desc: "Revenue & expense models",            icon: "📈" },
-      { label: "What-If Simulation",    href: "/features/simulation",          desc: "Monte Carlo scenario planning",       icon: "🧪" },
-      { label: "Budget Builder",        href: "/features/budget",              desc: "AI-drafted budgets & variance",       icon: "🎯" },
+      { label: "Features Overview",       href: "/features",                   desc: "Everything CFOlytics does",             icon: "⚡" },
+      { label: "AI Chat CFO",             href: "/features/ai-chat",            desc: "Conversational CFO powered by Gemini", icon: "💬" },
+      { label: "Anomaly Detection",       href: "/features/anomaly-detection",   desc: "Real-time AI-powered risk alerts",     icon: "🔍" },
+      { label: "Predictive Forecasting",  href: "/features/forecasting",         desc: "Revenue & expense models",            icon: "📈" },
+      { label: "What-If Simulation",      href: "/features/simulation",          desc: "Monte Carlo scenario planning",       icon: "🧪" },
+      { label: "Budget Builder",          href: "/features/budget",              desc: "AI-drafted budgets & variance",       icon: "🎯" },
+      { label: "Accounts Payable",        href: "/features/accounts-payable",    desc: "OCR invoices, PO matching, fraud",    icon: "🧾" },
+      { label: "KPI Builder",             href: "/features/kpi-builder",         desc: "Custom KPI formulas & live gauges",   icon: "📊" },
+      { label: "Connectors",              href: "/features/connectors",          desc: "QuickBooks, Tally, Excel & more",     icon: "🔌" },
+      { label: "AI Intelligence Engine",  href: "/features/intelligence",        desc: "Auto-extract insights from any file", icon: "🧠" },
     ],
   },
   {
@@ -29,7 +33,16 @@ const NAV = [
       { label: "For C-Suite",           href: "/solutions/executives",         desc: "Board-ready dashboards, in seconds",  icon: "👔" },
     ],
   },
-  { label: "Resources", href: "/how-it-works" },
+  {
+    label: "Resources",
+    href: "/resources",
+    dropdown: [
+      { label: "Product Screenshots",   href: "/resources",                    desc: "All 20 modules, live screenshots",    icon: "🖼️" },
+      { label: "Sample Report (PDF)",   href: "/marketing-photos/Finance Report/FR-1.pdf", desc: "Download AI-generated report",   icon: "📄" },
+      { label: "How It Works",         href: "/how-it-works",                  desc: "The full platform walkthrough",       icon: "🗺️" },
+      { label: "All Features",         href: "/features",                      desc: "Complete feature gallery",            icon: "📋" },
+    ],
+  },
   { label: "Pricing",   href: "/pricing" },
 ];
 

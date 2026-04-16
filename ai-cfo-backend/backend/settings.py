@@ -160,6 +160,7 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
     "x-org-role",
     "x-user-id",
+    "x-user-email",
 ]
 
 # ─────────────────────────────────────────────────────

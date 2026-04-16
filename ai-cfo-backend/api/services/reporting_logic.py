@@ -71,13 +71,21 @@ Example: OPEX|Software Subscriptions
 
 
 def _save_mapping(bot_id: str, raw_category: str, account_type: str, standardized_name: str) -> str:
-    CategoryMapping.objects.create(
-        bot_id=bot_id,
-        raw_category=raw_category,
-        account_type=account_type,
-        standardized_name=standardized_name
-    )
-    return account_type
+    from django.db import IntegrityError
+    try:
+        obj, created = CategoryMapping.objects.get_or_create(
+            bot_id=bot_id,
+            raw_category=raw_category,
+            defaults={
+                'account_type': account_type,
+                'standardized_name': standardized_name
+            }
+        )
+        return obj.account_type
+    except IntegrityError:
+        # Fallback if a race condition sneaks past get_or_create
+        mapping = CategoryMapping.objects.filter(bot_id=bot_id, raw_category=raw_category).first()
+        return mapping.account_type if mapping else "Other"
 
 
 def generate_pnl(bot_id: str, start_date=None, end_date=None) -> dict:

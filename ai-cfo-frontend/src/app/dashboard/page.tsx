@@ -132,8 +132,8 @@ function TeamStatusWidget() {
         </div>
       </div>
       <div className="space-y-2.5">
-        {members.slice(0, 3).map((m: any) => (
-          <div key={m.name} className="flex items-center gap-3">
+        {members.slice(0, 3).map((m: any, idx: number) => (
+          <div key={`${m.name}-${idx}`} className="flex items-center gap-3">
             <div className="relative">
               <div className="h-7 w-7 rounded-full bg-[#1e2637] flex items-center justify-center text-xs font-semibold text-white uppercase">
                 {m.name?.[0] || '?'}
@@ -168,7 +168,11 @@ function ActivityFeed({ botId }: { botId: string }) {
         });
         if (res.ok) {
           const data = await res.json();
-          setEvents(data.slice(0, 4));
+          if (data.results && Array.isArray(data.results)) {
+            setEvents(data.results.slice(0, 4));
+          } else if (Array.isArray(data)) {
+            setEvents(data.slice(0, 4));
+          }
         }
       } catch (err) {}
     };

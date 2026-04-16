@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { Sparkles, Check, AlertTriangle } from "lucide-react";
 import { useCurrency } from "@/context/CurrencyContext";
+import { toast } from "sonner";
 
 export default function BudgetPanel({ botId }: { botId: string }) {
   const [activeTab, setActiveTab] = useState<"builder" | "variance" | "montecarlo" | "ai-draft">("variance");
@@ -94,7 +95,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
       await loadVariance();
     } catch (err) {
       console.error(err);
-      alert("Failed to upload budget excel.");
+      toast.error("Failed to upload budget excel.");
     } finally {
       setIsUploading(false);
       e.target.value = ""; // reset
@@ -121,7 +122,7 @@ export default function BudgetPanel({ botId }: { botId: string }) {
       await generateAIBudget(botId, aiTargetMonth, aiGrowth, aiInstructions, true);
       await loadBudgets();
       await loadVariance();
-      alert(`AI budget applied successfully to ${aiTargetMonth}!`);
+      toast.success(`AI budget successfully saved to ${aiTargetMonth}!`);
     } catch (e) {
       console.error(e);
     } finally {

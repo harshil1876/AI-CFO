@@ -166,8 +166,8 @@ export default function ReportsPage() {
   // ------------------------------------------------------------------
   // Render Helpers
   // ------------------------------------------------------------------
-  const renderRow = (label: string, amount: number, isSubtotal = false, isGrandTotal = false) => (
-    <div className={`flex justify-between py-2 px-1 ${
+  const renderRow = (label: string, amount: number, isSubtotal = false, isGrandTotal = false, key?: string) => (
+    <div key={key || label} className={`flex justify-between py-2 px-1 ${
       isGrandTotal ? 'border-y-4 border-double border-amber-500/30' : 
       isSubtotal ? 'border-t border-amber-500/20' : ''
     }`}>
@@ -186,7 +186,7 @@ export default function ReportsPage() {
       <div className="mb-6">
         <h3 className="text-lg font-bold mb-2 uppercase tracking-wide text-slate-100 border-b border-amber-500/10 pb-2">{title}</h3>
         {Object.keys(objData.items || {}).map(item => (
-          renderRow(item, objData.items[item])
+          renderRow(item, objData.items[item], false, false, item)
         ))}
         {renderRow(`Total ${title}`, objData.total, true)}
       </div>

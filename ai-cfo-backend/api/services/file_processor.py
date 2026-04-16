@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from django.conf import settings
 from django.utils import timezone
-from api.models import UploadedFile, ParsedRecord
+from api.models import UploadedFile, ParsedRecord, Transaction, DepartmentData
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +101,12 @@ def process_file(upload_id: int) -> dict:
 
         # Step 4: Store all rows as flexible ParsedRecords
         _store_parsed_records(df, upload)
+        
+        # Step 4.5: If it looks like a financial ledger, map it to Transactions
+        try:
+            _auto_populate_ledger(df, upload.bot_id)
+        except Exception as e:
+            logger.error(f"Ledger auto-populate warning: {e}")
 
         upload.status = "completed"
         upload.processed_at = timezone.now()
@@ -301,3 +307,82 @@ def _store_parsed_records(df, upload: UploadedFile):
     # Bulk create for performance
     ParsedRecord.objects.bulk_create(records, batch_size=500)
     logger.info(f"Stored {len(records)} parsed records for file={upload.original_filename}")
+
+
+def _auto_populate_ledger(df, bot_id: str):
+    """
+    Attempts to map standard CSV columns (Date, Amount, Category, Vendor/Description, Department)
+    directly into the core Transaction and DepartmentData tables.
+    """
+    import pandas as pd
+    cols_lower = {str(c).lower(): str(c) for c in df.columns}
+    
+    # Needs at least a Date and an Amount column
+    date_col = cols_lower.get('date')
+    amount_col = cols_lower.get('amount') or cols_lower.get('amount_inr') or cols_lower.get('value')
+    
+    if not date_col or not amount_col:
+        return
+
+    cat_col = cols_lower.get('category') or cols_lower.get('type')
+    desc_col = cols_lower.get('vendor') or cols_lower.get('description')
+    dept_col = cols_lower.get('department')
+
+    transactions_to_create = []
+    department_map = {} # (dept_name, month_year) -> spend
+
+    for idx, row in df.iterrows():
+        # Parse Date
+        try:
+            raw_date = pd.to_datetime(row[date_col]).date()
+        except Exception:
+            continue
+            
+        # Parse Amount
+        try:
+            amt_val = float(str(row[amount_col]).replace(',', ''))
+            amt = Decimal(str(amt_val))
+        except Exception:
+            continue
+            
+        cat = str(row[cat_col]) if cat_col and pd.notna(row[cat_col]) else "Uncategorized"
+        desc = str(row[desc_col]) if desc_col and pd.notna(row[desc_col]) else ""
+        
+        transactions_to_create.append(Transaction(
+            bot_id=bot_id,
+            date=raw_date,
+            amount=amt,
+            category=cat,
+            description=desc,
+            review_status='reviewed'
+        ))
+        
+        # Track Department spend
+        if dept_col and pd.notna(row[dept_col]):
+            dept = str(row[dept_col])
+            month_year = raw_date.strftime("%Y-%m")
+            key = (dept, month_year)
+            if key not in department_map:
+                department_map[key] = Decimal("0")
+            
+            # Usually only negative amounts (expenses) are considered "actual spend" against a budget
+            if amt < 0:
+                department_map[key] += abs(amt)
+                
+    # Bulk create transactions
+    if transactions_to_create:
+        Transaction.objects.bulk_create(transactions_to_create, batch_size=500)
+        logger.info(f"Auto-populated {len(transactions_to_create)} Transactions for bot={bot_id}")
+        
+    # Bulk create or update Department data
+    for (dept_name, month_year), spend in department_map.items():
+        dept_obj, created = DepartmentData.objects.get_or_create(
+            bot_id=bot_id,
+            department_name=dept_name,
+            month_year=month_year,
+            defaults={'budget': spend * Decimal('1.2'), 'actual_spend': spend}
+        )
+        if not created:
+            dept_obj.actual_spend += spend
+            dept_obj.save()
+            

@@ -22,24 +22,24 @@ def _run_query(intent: str, bot_id: str, params: dict) -> list[dict]:
 
     if intent == "top_expenses":
         limit = params.get("limit", 10)
-        qs = Transaction.objects.filter(bot_id=bot_id, transaction_type="expense") \
-                                .order_by("-amount")[:limit]
+        qs = Transaction.objects.filter(bot_id=bot_id, amount__lt=0) \
+                                .order_by("amount")[:limit]
         for t in qs:
-            rows.append({"Category": t.category, "Amount ($)": float(t.amount), "Date": str(t.date), "Description": t.description or ""})
+            rows.append({"Category": t.category, "Amount ($)": abs(float(t.amount)), "Date": str(t.date), "Description": t.description or ""})
 
     elif intent == "expenses_by_category":
         from django.db.models import Sum
         department = params.get("department", "").lower()
-        qs = Transaction.objects.filter(bot_id=bot_id, transaction_type="expense")
+        qs = Transaction.objects.filter(bot_id=bot_id, amount__lt=0)
         if department:
             qs = qs.filter(category__icontains=department)
-        qs = qs.values("category").annotate(total=Sum("amount")).order_by("-total")
+        qs = qs.values("category").annotate(total=Sum("amount")).order_by("total")
         for r in qs:
-            rows.append({"Category": r["category"], "Total Spend ($)": float(r["total"])})
+            rows.append({"Category": r["category"], "Total Spend ($)": abs(float(r["total"]))})
 
     elif intent == "revenue_summary":
         from django.db.models import Sum
-        qs = Transaction.objects.filter(bot_id=bot_id, transaction_type="revenue") \
+        qs = Transaction.objects.filter(bot_id=bot_id, amount__gt=0) \
                                 .values("category").annotate(total=Sum("amount")).order_by("-total")
         for r in qs:
             rows.append({"Category": r["category"], "Total Revenue ($)": float(r["total"])})
@@ -48,7 +48,7 @@ def _run_query(intent: str, bot_id: str, params: dict) -> list[dict]:
         from django.db.models import Sum
         month = params.get("month", datetime.now().strftime("%Y-%m"))
         budgets = Budget.objects.filter(bot_id=bot_id, month_year=month, is_active=True)
-        actuals = Transaction.objects.filter(bot_id=bot_id, transaction_type="expense") \
+        actuals = Transaction.objects.filter(bot_id=bot_id, amount__lt=0) \
                                      .values("category").annotate(total=Sum("amount"))
         actual_map = {a["category"].lower(): float(a["total"]) for a in actuals}
         for b in budgets:
@@ -112,7 +112,7 @@ def _run_query(intent: str, bot_id: str, params: dict) -> list[dict]:
             rows.append({
                 "Date": str(t.date),
                 "Category": t.category,
-                "Type": t.transaction_type,
+                "Type": "Revenue" if t.amount > 0 else "Expense",
                 "Amount ($)": float(t.amount),
                 "Description": t.description or "",
             })

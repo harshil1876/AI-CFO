@@ -109,12 +109,25 @@ def chat_with_cfo(bot_id: str, message: str, chat_history: list = None, agent_id
     # Step 2: Fetch live KPIs (most recent snapshot)
     live_kpis = _get_live_kpis(bot_id)
 
+    # Step 2.5: Fetch Live Accounts Payable (Invoices & POs)
+    live_invoices = _get_live_invoices(bot_id)
+    live_pos = _get_live_pos(bot_id)
+
+    # Step 2.6: Fetch Live Budgets
+    live_budgets = _get_live_budgets(bot_id)
+
     # Step 3: Build the full prompt
     full_context = ""
     if rag_context:
         full_context += rag_context + "\n\n"
     if live_kpis:
         full_context += live_kpis + "\n\n"
+    if live_invoices:
+        full_context += live_invoices + "\n\n"
+    if live_pos:
+        full_context += live_pos + "\n\n"
+    if live_budgets:
+        full_context += live_budgets + "\n\n"
 
     # Step 4: Call the LLM
     response = _call_gemini(message, full_context, chat_history, agent_id)
@@ -141,6 +154,42 @@ def _get_live_kpis(bot_id: str) -> str:
     except Exception as e:
         logger.error(f"Error fetching live KPIs: {e}")
         return ""
+
+def _get_live_invoices(bot_id: str) -> str:
+    """Fetch recent invoices to give the chatbot immediate context on AP workflows."""
+    from api.models import Invoice
+    try:
+        invoices = Invoice.objects.filter(bot_id=bot_id).order_by("-uploaded_at")[:10]
+        if not invoices.exists():
+            return ""
+
+        lines = ["RECENT ACCOUNTS PAYABLE INVOICES:"]
+        for i in invoices:
+            lines.append(f"- Vendor: {i.vendor_name} | Amount: ${float(i.total_amount):.2f} | Date: {i.date_issued} | Status: {i.status} | Fraud Score: {i.fraud_confidence_score}%")
+        return "\n".join(lines)
+    except Exception as e:
+        logger.error(f"Error fetching live invoices for chat context: {e}")
+        return ""
+
+def _get_live_pos(bot_id: str) -> str:
+    from api.models import PurchaseOrder
+    try:
+        pos = PurchaseOrder.objects.filter(bot_id=bot_id).order_by("-created_at")[:10]
+        if not pos.exists(): return ""
+        lines = ["RECENT PURCHASE ORDERS:"]
+        for p in pos: lines.append(f"- PO #{p.po_number} | Vendor: {p.vendor_name} | Amount: ${float(p.expected_amount):.2f} | Status: {p.status}")
+        return "\n".join(lines)
+    except Exception as e: return ""
+
+def _get_live_budgets(bot_id: str) -> str:
+    from api.models import Budget
+    try:
+        budgets = Budget.objects.filter(bot_id=bot_id, is_active=True).order_by("-created_at")[:20]
+        if not budgets.exists(): return ""
+        lines = ["ACTIVE BUDGET ALLOCATIONS:"]
+        for b in budgets: lines.append(f"- Category: {b.category} | Allocated: ${float(b.allocated_amount):.2f} | Month Focus: {b.month_year}")
+        return "\n".join(lines)
+    except Exception as e: return ""
 
 
 def _call_gemini(message: str, context: str, chat_history: list = None, agent_id: str = "strategist") -> dict:

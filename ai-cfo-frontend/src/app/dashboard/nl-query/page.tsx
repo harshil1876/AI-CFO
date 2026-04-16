@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useUser, useOrganization } from "@clerk/nextjs";
-import { runNLQuery, type NLQueryResult } from "@/lib/api";
+import { useUser, useOrganization, useAuth } from "@clerk/nextjs";
+import { runNLQuery, type NLQueryResult, getAuthHeaders } from "@/lib/api";
 import { Send, Database, Sparkles, AlertTriangle, TableProperties, Clock } from "lucide-react";
 
 const EXAMPLE_QUESTIONS = [
@@ -26,6 +26,7 @@ interface QueryHistoryItem {
 export default function NLQueryPage() {
   const { user } = useUser();
   const { organization } = useOrganization();
+  const { userId } = useAuth();
   const botId = organization?.id || user?.id || "";
 
   const [question, setQuestion] = useState("");
@@ -33,6 +34,33 @@ export default function NLQueryPage() {
   const [history, setHistory] = useState<QueryHistoryItem[]>([]);
   const [activeResult, setActiveResult] = useState<QueryHistoryItem | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load history from Supabase backend DB on component mount
+  useEffect(() => {
+    if (!botId) return;
+    const fetchHistory = async () => {
+      try {
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/query-history/?bot_id=${botId}`, {
+          headers
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const hydrated = data.map((item: any) => ({
+            id: item.id,
+            question: item.question,
+            result: item.result,
+            timestamp: new Date(item.created_at)
+          }));
+          setHistory(hydrated);
+          if (hydrated.length > 0) setActiveResult(hydrated[0]);
+        }
+      } catch (e) {
+        console.error("Error loading query history:", e);
+      }
+    };
+    fetchHistory();
+  }, [botId]);
 
   const handleQuery = async (q?: string) => {
     const queryText = (q || question).trim();
@@ -50,6 +78,23 @@ export default function NLQueryPage() {
       };
       setHistory(prev => [item, ...prev]);
       setActiveResult(item);
+
+      // Save to Supabase backend permanently
+      const headers = await getAuthHeaders();
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/query-history/`, {
+        method: "POST",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+          "X-User-Id": userId || ""
+        },
+        body: JSON.stringify({
+          bot_id: botId,
+          question: queryText,
+          result: result
+        })
+      });
+      
     } catch (e) {
       console.error(e);
     } finally {

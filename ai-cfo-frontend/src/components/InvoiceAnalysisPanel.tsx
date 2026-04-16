@@ -8,6 +8,7 @@ import {
   type InvoiceRecord, type PurchaseOrder
 } from "@/lib/api";
 import { Send, Bot, MailOpen, Zap, Clock, CheckCircle2, XCircle, AlertTriangle, Mail, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 // ── API helpers for Sprint 18 ──────────────────────────────────────────────
 async function fetchInvoiceThreads(invoiceId: number) {
@@ -246,6 +247,29 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string>("");
   const [scanProgress, setScanProgress] = useState(0);
+  
+  const [showPoForm, setShowPoForm] = useState(false);
+  const [poForm, setPoForm] = useState({ po_number: '', vendor_name: '', expected_amount: '' });
+
+  const handleCreatePO = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/purchase-orders/`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...poForm, bot_id: botId, status: 'open' })
+      });
+      if (!res.ok) throw new Error('Failed to create PO');
+      const newPo = await res.json();
+      setPos([newPo, ...pos]);
+      setShowPoForm(false);
+      setPoForm({ po_number: '', vendor_name: '', expected_amount: '' });
+      toast.success("Purchase Order created successfully");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
 
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [pos, setPos] = useState<PurchaseOrder[]>([]);
@@ -290,7 +314,7 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
         if (fileInputRef.current) fileInputRef.current.value = "";
       }, 500);
     } catch (err: any) {
-      alert("Error: " + err.message);
+      toast.error(err.message || "An error occurred");
       setIsProcessing(false);
     } finally {
       clearInterval(interval);
@@ -303,7 +327,7 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
       if (currentResult && currentResult.id === invoiceId) setCurrentResult({ ...currentResult, status: result.status });
       setInvoices(prev => prev.map(inv => inv.id === invoiceId ? { ...inv, status: result.status } : inv));
     } catch (e: any) {
-      alert("Failed to update status: " + e.message);
+      toast.error("Failed to update status: " + e.message);
     }
   };
 
@@ -577,9 +601,29 @@ export default function InvoiceAnalysisPanel({ botId }: { botId: string }) {
       {/* ── POs Tab ── */}
       {activeTab === "pos" && (
         <div className="rounded-xl border border-[#1e2637] bg-[#0c0f17] overflow-hidden animate-in fade-in duration-300">
-          <div className="px-5 py-4 border-b border-[#1e2637]">
+          <div className="px-5 py-4 border-b border-[#1e2637] flex justify-between items-center">
             <h3 className="text-sm font-semibold text-white">Purchase Orders</h3>
+            <button onClick={() => setShowPoForm(!showPoForm)} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-md transition-colors">+ New PO</button>
           </div>
+          {showPoForm && (
+            <div className="p-5 border-b border-[#1e2637] bg-[#111827]">
+              <form onSubmit={handleCreatePO} className="flex flex-col md:flex-row gap-3 items-end">
+                <div className="flex-1 w-full">
+                  <label className="text-[10px] text-slate-500 uppercase font-semibold mb-1 block">PO Number</label>
+                  <input required value={poForm.po_number} onChange={e => setPoForm({...poForm, po_number: e.target.value})} placeholder="e.g. PO-2026-001" className="w-full bg-[#0a0d14] border border-[#1e2637] rounded-md px-3 py-2 text-xs text-white outline-none focus:border-indigo-500/50" />
+                </div>
+                <div className="flex-1 w-full">
+                  <label className="text-[10px] text-slate-500 uppercase font-semibold mb-1 block">Vendor Name</label>
+                  <input required value={poForm.vendor_name} onChange={e => setPoForm({...poForm, vendor_name: e.target.value})} placeholder="e.g. Acme Corp" className="w-full bg-[#0a0d14] border border-[#1e2637] rounded-md px-3 py-2 text-xs text-white outline-none focus:border-indigo-500/50" />
+                </div>
+                <div className="flex-1 w-full">
+                  <label className="text-[10px] text-slate-500 uppercase font-semibold mb-1 block">Amount ($)</label>
+                  <input required type="number" step="0.01" value={poForm.expected_amount} onChange={e => setPoForm({...poForm, expected_amount: e.target.value})} placeholder="0.00" className="w-full bg-[#0a0d14] border border-[#1e2637] rounded-md px-3 py-2 text-xs text-white outline-none focus:border-indigo-500/50" />
+                </div>
+                <button type="submit" className="w-full md:w-auto px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-md transition-colors h-[34px]">Save PO</button>
+              </form>
+            </div>
+          )}
           <div className="p-4">
             {pos.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-8">No Purchase Orders available.</p>

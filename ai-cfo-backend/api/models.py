@@ -607,3 +607,25 @@ class CustomKPI(models.Model):
 
     def __str__(self):
         return f"[{self.bot_id}] {self.name}: {self.formula}"
+
+# =====================================================
+# Sprint 18 Part B: Data Query History Persisted
+# =====================================================
+
+class NLQueryHistory(models.Model):
+    """
+    Stores the history of natural language queries and their structured results 
+    so the web UI can retain context permanently in the Supabase DB instead of session storage.
+    """
+    bot_id = models.CharField(max_length=255, db_index=True)
+    user_id = models.CharField(max_length=255, blank=True, null=True)
+    
+    question = models.TextField()
+    result = models.JSONField(help_text="Stores the generated AI output dict (columns, rows, success, etc)")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.bot_id}] Q: {self.question[:50]}"

@@ -4,7 +4,7 @@ from .models import (
     Transaction, DepartmentData,
     KPISnapshot, ForecastResult, AnomalyLog, Recommendation, Budget,
     PurchaseOrder, Invoice,
-    Workspace, GoalTarget, OrgChatMessage
+    Workspace, GoalTarget, OrgChatMessage, NLQueryHistory
 )
 
 
@@ -99,4 +99,10 @@ class GoalTargetSerializer(serializers.ModelSerializer):
 class OrgChatMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrgChatMessage
+        fields = '__all__'
+
+
+class NLQueryHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NLQueryHistory
         fields = '__all__'

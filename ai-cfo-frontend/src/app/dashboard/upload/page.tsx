@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser, useOrganization } from "@clerk/nextjs";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import FileUpload from "@/components/FileUpload";
 import { type UploadResponse, getUploadedFiles, type UploadedFileRecord } from "@/lib/api";
 import {
@@ -55,7 +55,7 @@ export default function UploadPage() {
     const loadFiles = useCallback(async () => {
         setIsLoadingFiles(true);
         const data = await getUploadedFiles(BOT_ID);
-        setFiles(data);
+        setFiles(Array.isArray(data) ? data : []);
         setIsLoadingFiles(false);
     }, [BOT_ID]);
 
@@ -168,9 +168,8 @@ export default function UploadPage() {
                                         const cfg = STATUS_CONFIG[file.status] || STATUS_CONFIG.pending;
                                         const isExpanded = showSummary === file.id;
                                         return (
-                                            <>
+                                            <Fragment key={file.id}>
                                                 <tr
-                                                    key={file.id}
                                                     className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                                                     onClick={() => setShowSummary(isExpanded ? null : file.id)}
                                                 >
@@ -215,7 +214,7 @@ export default function UploadPage() {
                                                         </td>
                                                     </tr>
                                                 )}
-                                            </>
+                                            </Fragment>
                                         );
                                     })}
                                 </tbody>

@@ -42,7 +42,7 @@ def generate_ai_budget(bot_id: str, prompt_params: dict) -> dict:
     # 1. Pull historical expense averages per category (last 3 months)
     historical = (
         Transaction.objects
-        .filter(bot_id=bot_id, transaction_type="expense")
+        .filter(bot_id=bot_id, amount__lt=0)
         .values("category")
         .annotate(avg_spend=Avg("amount"), total_spend=Sum("amount"))
         .order_by("-total_spend")
@@ -113,47 +113,72 @@ Include ALL categories from historical data. Calculate total_budget as the sum.
         elif "```" in text:
             text = text.split("```")[1].split("```")[0].strip()
 
-        result = json.loads(text)
-        items = result.get("budget_items", [])
+        result_obj = json.loads(text)
+        items = result_obj.get("budget_items", [])
+        ai_rationale = result_obj.get("ai_rationale", "AI budget generated successfully.")
 
-        # Recalculate total
-        total = sum(float(item.get("allocated_amount", 0)) for item in items)
-        result["total_budget"] = round(total, 2)
+    except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg or "Quota" in error_msg:
+            logger.warning("[BudgetGen] Gemini rate limit hit. Falling back to algorithmic budgeting.")
+            items = []
+            for h in historical:
+                cat = h["category"]
+                avg_spend = abs(float(h["avg_spend"]))
+                
+                multiplier = 1.0 + (growth_pct / 100.0)
+                
+                if "reduce" in instructions.lower() and cat.lower().split()[0] in instructions.lower():
+                    multiplier = 0.85
+                elif "protect" in instructions.lower() and cat.lower().split()[0] in instructions.lower():
+                    multiplier = max(1.0, multiplier)
+                
+                allocated = round(avg_spend * multiplier, 2)
+                items.append({
+                    "category": cat,
+                    "allocated_amount": allocated,
+                    "rationale": f"Algorithmic Fallback: applied {multiplier*100 - 100:+.1f}% heuristic adjustment."
+                })
+            ai_rationale = f"Google API Rate Limit reached. Controller shifted to localized algorithmic baseline applying {growth_pct}% growth and heuristic adjustments."
+        else:
+            logger.error(f"[BudgetGen] Error: {error_msg}")
+            return {"success": False, "error": error_msg}
 
-        # 4. Optionally persist to Budget table
-        if apply_to_db and items:
-            saved_count = 0
+    # Recalculate total
+    total = sum(float(item.get("allocated_amount", 0)) for item in items)
+    
+    final_result = {
+        "success": True,
+        "target_month": target_month,
+        "total_budget": round(total, 2),
+        "ai_rationale": ai_rationale,
+        "budget_items": items
+    }
+
+    # 4. Optionally persist to Budget table
+    if apply_to_db and items:
+        saved_count = 0
+        from django.db import transaction
+        with transaction.atomic():
             for item in items:
                 category = item.get("category", "").strip()
                 amount = float(item.get("allocated_amount", 0))
                 if not category or amount <= 0:
                     continue
-                # Deactivate existing active budget for same category+month
+                
                 Budget.objects.filter(
                     bot_id=bot_id, category=category, month_year=target_month, is_active=True
                 ).update(is_active=False)
-                # Get latest version
+                
                 latest = Budget.objects.filter(bot_id=bot_id, category=category, month_year=target_month).order_by("-version").first()
                 version = (latest.version + 1) if latest else 1
+                
                 Budget.objects.create(
-                    bot_id=bot_id,
-                    category=category,
-                    month_year=target_month,
-                    allocated_amount=amount,
-                    version=version,
-                    is_active=True
+                    bot_id=bot_id, category=category, month_year=target_month,
+                    allocated_amount=amount, version=version, is_active=True
                 )
                 saved_count += 1
-            result["saved_to_db"] = saved_count
-            result["message"] = f"✅ {saved_count} budget categories saved to {target_month}."
+        final_result["saved_to_db"] = saved_count
+        final_result["message"] = f"✅ {saved_count} budget categories saved to {target_month}."
 
-        result["success"] = True
-        result["target_month"] = target_month
-        return result
-
-    except json.JSONDecodeError as e:
-        logger.error(f"[BudgetGen] JSON parse failed: {e}")
-        return {"success": False, "error": "AI returned an invalid format. Please try again."}
-    except Exception as e:
-        logger.error(f"[BudgetGen] Error: {e}")
-        return {"success": False, "error": str(e)}
+    return final_result

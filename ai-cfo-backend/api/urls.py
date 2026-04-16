@@ -31,6 +31,7 @@ from .views import (
     invoice_threads, mailgun_inbound_webhook, email_inbox_logs,
     # Sprint 18 Part B: Proactive Generative Layer
     nl_query, generate_budget, custom_kpis, evaluate_custom_kpi, delete_custom_kpi,
+    NLQueryHistoryListCreateView,
 )
 from .v1_views import ingest_transactions, fetch_kpis
 
@@ -127,6 +128,7 @@ urlpatterns = [
 
     # Sprint 18 Part B: Ad-Hoc Data Query Agent (NL2SQL)
     path('query/', nl_query, name='nl-query'),
+    path('query-history/', NLQueryHistoryListCreateView.as_view(), name='nl-query-history'),
 
     # Sprint 18 Part B: Generative Budget Planner
     path('budget/generate/', generate_budget, name='budget-generate'),

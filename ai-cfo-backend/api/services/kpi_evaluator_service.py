@@ -30,8 +30,12 @@ VARIABLE_MAP = {
 
 def _sum_transactions(bot_id: str, txn_type: str) -> float:
     from api.models import Transaction
-    result = Transaction.objects.filter(bot_id=bot_id, transaction_type=txn_type).aggregate(total=Sum("amount"))
-    return float(result["total"] or 0)
+    if txn_type == "expense":
+        result = Transaction.objects.filter(bot_id=bot_id, amount__lt=0).aggregate(total=Sum("amount"))
+        return abs(float(result["total"] or 0))
+    else:
+        result = Transaction.objects.filter(bot_id=bot_id, amount__gt=0).aggregate(total=Sum("amount"))
+        return float(result["total"] or 0)
 
 
 def _count_invoices(bot_id: str, status: str | None) -> float:
@@ -57,10 +61,10 @@ def _resolve_category_spend(bot_id: str, category_name: str) -> float:
     clean = re.sub(r'\s+(spend|cost|costs|expense|expenses)$', '', category_name, flags=re.IGNORECASE).strip()
     result = Transaction.objects.filter(
         bot_id=bot_id,
-        transaction_type="expense",
+        amount__lt=0,
         category__icontains=clean
     ).aggregate(total=Sum("amount"))
-    return float(result["total"] or 0)
+    return abs(float(result["total"] or 0))
 
 
 def evaluate_formula(bot_id: str, formula: str) -> dict:

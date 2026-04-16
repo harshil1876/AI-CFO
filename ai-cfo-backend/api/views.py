@@ -88,6 +88,9 @@ def upload_file(request):
     # Process the file (parse + AI analysis)
     result = process_file(upload.id)
 
+    from .services.audit_service import log_event
+    log_event(request, 'FILE_UPLOADED', 'Ledger', upload.id, f"Uploaded file: {file_obj.name}")
+
     return Response(result, status=status.HTTP_201_CREATED if result["status"] == "completed" else status.HTTP_422_UNPROCESSABLE_ENTITY)
 
 
@@ -1688,4 +1691,24 @@ def delete_custom_kpi(request, kpi_id):
         return Response({'message': f'KPI "{kpi.name}" deleted.'})
     except CustomKPI.DoesNotExist:
         return Response({'error': 'KPI not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+# =====================================================
+# Sprint 18 Part B: Data Query History Persisted
+# =====================================================
+from rest_framework import generics
+from .models import NLQueryHistory
+from .serializers import NLQueryHistorySerializer
+
+class NLQueryHistoryListCreateView(generics.ListCreateAPIView):
+    serializer_class = NLQueryHistorySerializer
+
+    def get_queryset(self):
+        bot_id = get_verified_bot_id(self.request, self.request.query_params.get('bot_id'))
+        return NLQueryHistory.objects.filter(bot_id=bot_id).order_by('-created_at')[:25]
+
+    def perform_create(self, serializer):
+        bot_id = get_verified_bot_id(self.request, self.request.data.get('bot_id'))
+        user_id = self.request.headers.get('X-User-Id', '')
+        serializer.save(bot_id=bot_id, user_id=user_id)
+
 

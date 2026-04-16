@@ -59,8 +59,9 @@ export default function FileUpload({ botId, onUploadComplete }: FileUploadProps)
                            body: JSON.stringify({ bot_id: botId, months: 6 })
                        });
                        // 3. Sync RAG
-                       await fetch(`${API_URL}/chat/${botId}/sync/`, {
-                           method: "POST", headers: { "Content-Type": "application/json", ...headers }
+                       await fetch(`${API_URL}/rag/sync/`, {
+                           method: "POST", headers: { "Content-Type": "application/json", ...headers },
+                           body: JSON.stringify({ bot_id: botId })
                        });
                    } catch (e) {
                        console.error("Auto-pipeline failed", e);
